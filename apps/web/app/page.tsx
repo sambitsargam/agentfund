@@ -356,13 +356,19 @@ export default async function Home() {
                       <p className="muted">
                         Observed paid Task attempts:{" "}
                         {reliability.paidCollectionsVerified} collected ·{" "}
-                        {reliability.paidTasksFailed} failed ·{" "}
                         {reliability.paidTasksOngoing} ongoing.{" "}
+                        {reliability.paidTasksFailed > 0 &&
+                          (reliability.lastFailureAt &&
+                          reliability.lastCollectionAt &&
+                          reliability.lastFailureAt <
+                            reliability.lastCollectionAt
+                            ? `${reliability.paidTasksFailed} earlier attempt${reliability.paidTasksFailed === 1 ? "" : "s"} failed, none since ${reliability.lastFailureAt.slice(0, 16).replace("T", " ")} UTC; every attempt after that collected. `
+                            : `${reliability.paidTasksFailed} failed. `)}
                         {reliability.paidTasksNeedingRecovery
                           ? `${reliability.paidTasksNeedingRecovery} need worker recovery; no payment is being retried. `
                           : ""}
-                        Includes historical failures; this sample does not
-                        establish marketplace reliability.
+                        A sample this small does not establish marketplace
+                        reliability.
                       </p>
                     )}
                     <TaskRepayments tasks={tasks} repayments={repayments} />
