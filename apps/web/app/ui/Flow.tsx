@@ -157,6 +157,44 @@ export function Flow({ fromAgents, fromTeams, toInvestor, toAtlas, waiting, inve
           pays investors first
         </text>
       </svg>
+      <div className="flow-mobile">
+        <div className="flow-bar">
+          {[
+            { v: toInvestor, c: "#e9b949" },
+            { v: toAtlas, c: "#3ddc97" },
+            { v: waiting, c: "#f0a93b" },
+          ].map((x, i) => (
+            <i key={i} style={{ width: `${outTotal === 0n ? 0 : (Number(x.v) / Number(outTotal)) * 100}%`, background: x.c }} />
+          ))}
+        </div>
+        <div className="flow-rows">
+          <div>
+            <em style={{ background: "#7b7cf0" }} />
+            <span>Paid by AI agents</span>
+            <b>{tusdm(fromAgents)}</b>
+          </div>
+          <div>
+            <em style={{ background: "#3f8fd0" }} />
+            <span>Paid by Sokosumi teams</span>
+            <b>{tusdm(fromTeams)}</b>
+          </div>
+          <div>
+            <em style={{ background: "#e9b949" }} />
+            <span>Repaid to {investorName}</span>
+            <b>{tusdm(toInvestor)}</b>
+          </div>
+          <div>
+            <em style={{ background: "#3ddc97" }} />
+            <span>Kept by Atlas</span>
+            <b>{tusdm(toAtlas)}</b>
+          </div>
+          <div>
+            <em style={{ background: "#f0a93b" }} />
+            <span>Awaiting the next split</span>
+            <b>{tusdm(waiting)}</b>
+          </div>
+        </div>
+      </div>
       <div className="flow-foot">
         <span>
           <i style={{ background: "#7b7cf0" }} />

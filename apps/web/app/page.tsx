@@ -1,12 +1,16 @@
 import { ATLAS_DEAL, basescan, cardanoscan } from "@agentfund/shared";
 import { COWORKER_ID, REGISTRY, SPLITTER, readCardano, readDecisions, readRating, type Decision, type Payment } from "../lib/chain";
 import { readAgentIdentity, readCoworkerTasks, type AgentIdentity, type CoworkerTask } from "../lib/sokosumi";
-import { ago, flagWords, scoreParts, short, tusdm } from "../lib/present";
+import { ago, countdown, flagWords, scoreParts, short, tusdm } from "../lib/present";
 import { Actions } from "./ui/Actions";
+import { CheckWallet } from "./ui/CheckWallet";
 import { Flow } from "./ui/Flow";
 import { Live } from "./ui/Live";
 
 export const revalidate = 20;
+
+const SOKOSUMI_URL = process.env.SOKOSUMI_LISTING_URL ?? "https://preprod.sokosumi.com";
+const VIDEO_URL = process.env.DEMO_VIDEO_URL;
 
 type Settled<T> = { ok: true; value: T } | { ok: false; error: string };
 async function settle<T>(p: Promise<T>): Promise<Settled<T>> {
@@ -16,8 +20,6 @@ async function settle<T>(p: Promise<T>): Promise<Settled<T>> {
     return { ok: false, error: (err as Error).message.split("\n")[0]! };
   }
 }
-
-const grade = (s: number) => (s >= 800 ? "Strong" : s >= 600 ? "Solid" : s >= 300 ? "Building a record" : "Unproven");
 
 export default async function Home() {
   const renderedAt = Date.now();
@@ -30,27 +32,27 @@ export default async function Home() {
   ]);
 
   const investor = ATLAS_DEAL.investors[0]!;
+  const pct = investor.bps / 100;
   const c = cardano.ok ? cardano.value : null;
   const ds = decisions.ok ? decisions.value : [];
   const r = rating.ok ? rating.value : null;
   const toAtlas = c ? c.splits.reduce((s, x) => s + BigInt(x.atlas), 0n) : 0n;
-  const earned = c ? BigInt(c.earnedX402) + BigInt(c.earnedMasumi) : 0n;
   const count = (v: Decision["verdict"]) => ds.filter((d) => d.verdict === v).length;
-  const blocked = count("DENY");
+  const reports = ds.filter((d) => d.verdict === "ALLOW" && c?.payments.some((p) => p.requestId === d.requestId)).length;
+  const sokosumiDone = (tasks ?? []).filter((t) => ["completed", "awaiting-withdrawal", "settled"].includes(t.stage)).length;
 
   return (
     <>
       <header className="topbar">
-        <div className="shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingBottom: 0 }}>
+        <div className="shell bar">
           <div className="brand">
             <span className="glyph">A</span> AgentFund
           </div>
           <nav>
-            <a href="#try">Try it</a>
+            <a href="#check">Check a wallet</a>
+            <a href="#try">See it happen</a>
             <a href="#flow">Money flow</a>
             <a href="#payments">Payments</a>
-            <a href="#tasks">Tasks</a>
-            <a href="#how">How it works</a>
           </nav>
           <Live renderedAt={renderedAt} />
         </div>
@@ -60,76 +62,73 @@ export default async function Home() {
         <section className="hero">
           <div>
             <h1>
-              Investors get paid <b>before</b> the agent does.
+              AI agents that earn can now <b>raise money</b>, and repay it automatically.
             </h1>
-            <p>
-              Atlas is an AI agent that checks Cardano wallets for a fee. Its investor put up money for a {investor.bps / 100}% share of everything it earns.
-              Every payment lands in a contract that can only release money by paying the investor first, and Chainlink checks each payment before it is made.
+            <p className="sub">
+              Atlas checks Cardano wallets for teams and agents. Its backer gets {pct}% of every payment, enforced by a Cardano contract. Chainlink checks
+              every payment before it is made.
             </p>
-          </div>
-          <div className="hero-aside">
-            <div className="verdict-tally">
-              <div className="tally allow">
-                <div className="n num">{count("ALLOW")}</div>
-                <div className="l">Allowed</div>
-              </div>
-              <div className="tally deny">
-                <div className="n num">{blocked}</div>
-                <div className="l">Blocked</div>
-              </div>
-              <div className="tally review">
-                <div className="n num">{count("REVIEW")}</div>
-                <div className="l">Held</div>
-              </div>
-            </div>
-            <div style={{ fontSize: 12, color: "var(--text-3)", textAlign: "center" }}>
-              Chainlink decisions, recorded on Base Sepolia
+            <div className="hero-cta">
+              <a className="btn primary" href="#check">
+                Check a wallet
+              </a>
+              <a className="btn" href={SOKOSUMI_URL} target="_blank" rel="noreferrer">
+                Hire Atlas on Sokosumi ↗
+              </a>
             </div>
           </div>
+          <ol className="strip">
+            <li>
+              <span className="n">1</span>
+              <div>
+                <b>Hired</b>
+                <span>Teams hire Atlas on Sokosumi. Agents pay it per report.</span>
+              </div>
+            </li>
+            <li>
+              <span className="n">2</span>
+              <div>
+                <b>Checked by Chainlink</b>
+                <span>Every agent payment is approved or blocked before any money moves.</span>
+              </div>
+            </li>
+            <li>
+              <span className="n">3</span>
+              <div>
+                <b>Split on Cardano</b>
+                <span>The contract pays the backer first. Atlas cannot skip it.</span>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section className="sec" id="check">
+          <div className="sec-head">
+            <h2>Check a Cardano wallet</h2>
+            <p>Free preview of the report Atlas sells</p>
+          </div>
+          <CheckWallet sokosumiUrl={SOKOSUMI_URL} />
         </section>
 
         <section className="stats">
-          <div className="stat accent">
-            <div className="k">Earned by Atlas</div>
-            <div className="v num">
-              {c ? tusdm(earned) : "–"}
-              <small>tUSDM</small>
-            </div>
-            <div className="s">{c ? `${c.payments.length} payments into the contract` : "unavailable"}</div>
-          </div>
-          <div className="stat">
-            <div className="k">Repaid to the investor</div>
-            <div className="v num">
-              {c ? tusdm(c.repaidToInvestor) : "–"}
-              <small>tUSDM</small>
-            </div>
-            <div className="s">{c && c.splits.length > 0 ? `across ${c.splits.length} on-chain split${c.splits.length === 1 ? "" : "s"}` : "no split yet"}</div>
-          </div>
-          <div className="stat">
-            <div className="k">Chainlink rating</div>
-            <div className="v num">
-              {r ? r.score : "–"}
-              <small>/ 1000</small>
-            </div>
-            <div className="s">{r ? `${grade(r.score)} · ${ago(r.observedAt)}` : "not rated yet"}</div>
-          </div>
-          <div className="stat">
-            <div className="k">Bad payments stopped</div>
-            <div className="v num" style={{ color: blocked > 0 ? "var(--red)" : undefined }}>
-              {blocked}
-            </div>
-            <div className="s">before any money moved</div>
-          </div>
+          <Stat k="Payments made" v={String(c?.payments.length ?? "–")} s="into the investor contract" />
+          <Stat k="Splits enforced on-chain" v={String(c?.splits.length ?? "–")} s="backer paid first, every time" accent />
+          <Stat k="Bad payments blocked" v={String(count("DENY"))} s="before any money moved" danger={count("DENY") > 0} />
+          <Stat k="Reports delivered" v={String(reports + sokosumiDone)} s={`${reports} to agents · ${sokosumiDone} on Sokosumi`} />
         </section>
 
         <section className="sec" id="try">
-          <Actions enabled={process.env.DEMO_ACTIONS === "on"} />
+          <div className="sec-head">
+            <h2>See it happen</h2>
+            <p>Real transactions on test networks</p>
+          </div>
+          <Actions enabled={process.env.DEMO_ACTIONS === "on"} videoUrl={VIDEO_URL} />
         </section>
 
         <section className="sec" id="flow">
           <div className="sec-head">
             <h2>Where the money goes</h2>
-            <p>Read from the investor contract on Cardano preprod</p>
+            <p>Read from the investor contract</p>
           </div>
           {c ? (
             <Flow
@@ -138,8 +137,8 @@ export default async function Home() {
               toInvestor={BigInt(c.repaidToInvestor)}
               toAtlas={toAtlas}
               waiting={BigInt(c.lockedNow)}
-              investorName={investor.name}
-              investorPct={investor.bps / 100}
+              investorName="Seed backer"
+              investorPct={pct}
             />
           ) : (
             <div className="panel err">Could not read Cardano{cardano.ok ? "" : `: ${cardano.error}`}</div>
@@ -149,32 +148,22 @@ export default async function Home() {
         <section className="sec">
           <div className="cols">
             <div className="panel panel-pad">
-              <div className="agent-head">
-                <div className="mark">A</div>
-                <div>
-                  <h3>Atlas</h3>
-                  <p>Checks any Cardano wallet before you pay it, and explains the verdict in plain words with links to the public record.</p>
-                  <Badges identity={identity} rated={Boolean(r)} />
-                </div>
-              </div>
-
+              <h3 className="card-title">Atlas</h3>
+              <p className="card-sub">Checks any Cardano wallet before you pay it, and explains the verdict in plain words with links to the public record.</p>
+              <Badges identity={identity} rated={Boolean(r)} />
               {r ? (
                 <>
                   <div className="rating">
-                    <div>
-                      <div style={{ fontSize: 34, fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1 }} className="num">
-                        {r.score}
-                        <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500, marginLeft: 5 }}>/ 1000</span>
-                      </div>
-                      <div className="meta">
-                        {grade(r.score)} · updated {ago(r.observedAt)}
-                      </div>
-                      {r.txHash && (
-                        <a href={basescan.tx(r.txHash)} target="_blank" rel="noreferrer">
-                          View the rating on Base Sepolia →
-                        </a>
-                      )}
+                    <div className="score num">
+                      {r.score}
+                      <span>/ 1000</span>
                     </div>
+                    <div className="meta">New agent, still building a record. The score rises with real earnings and uptime.</div>
+                    {r.txHash && (
+                      <a href={basescan.tx(r.txHash)} target="_blank" rel="noreferrer">
+                        Rating written by Chainlink ↗
+                      </a>
+                    )}
                   </div>
                   <div className="bars">
                     {scoreParts(BigInt(r.earnings), r.paymentCount, r.probeOk, r.latencyMs).map((p) => {
@@ -192,48 +181,32 @@ export default async function Home() {
                   </div>
                 </>
               ) : (
-                <p style={{ color: "var(--text-3)", fontSize: 13 }}>{rating.ok ? "Not rated yet." : `Rating unavailable: ${rating.error}`}</p>
+                <p className="muted small">{rating.ok ? "Not rated yet." : `Rating unavailable: ${rating.error}`}</p>
               )}
             </div>
 
             <div className="panel panel-pad">
-              <div className="agent-head" style={{ borderBottom: "none", paddingBottom: 4 }}>
-                <div>
-                  <h3>The deal</h3>
-                  <p>Written into the contract address, so it cannot be changed after funding.</p>
-                </div>
-              </div>
+              <h3 className="card-title">The deal</h3>
+              <p className="card-sub">Written into the contract address, so it cannot be changed after funding.</p>
               <div className="deal-split">
-                <i style={{ width: `${investor.bps / 100}%`, background: "var(--gold)" }} />
-                <i style={{ width: `${100 - investor.bps / 100}%`, background: "var(--teal)" }} />
+                <i style={{ width: `${pct}%`, background: "var(--gold)" }} />
+                <i style={{ width: `${100 - pct}%`, background: "var(--teal)" }} />
               </div>
               <dl className="kv">
-                <dt>{investor.name} receives</dt>
-                <dd className="num">{investor.bps / 100}% of every payment</dd>
+                <dt>Seed backer (test wallet)</dt>
+                <dd className="num">{pct}% of every payment</dd>
                 <dt>Atlas keeps</dt>
-                <dd className="num">{100 - investor.bps / 100}%</dd>
+                <dd className="num">{100 - pct}%</dd>
                 <dt>Repaid so far</dt>
                 <dd className="num">{c ? tusdm(c.repaidToInvestor) : "–"} tUSDM</dd>
-                <dt>Paid to Atlas</dt>
-                <dd className="num">{tusdm(toAtlas)} tUSDM</dd>
                 <dt>Awaiting the next split</dt>
                 <dd className="num">{c ? tusdm(c.lockedNow) : "–"} tUSDM</dd>
-                <dt>Price per report</dt>
-                <dd>0.50 tUSDM</dd>
-                <dt>Price per Sokosumi task</dt>
-                <dd>1 tUSDM</dd>
+                <dt>Price</dt>
+                <dd>0.50 tUSDM per report · 1 tUSDM per Sokosumi task</dd>
                 <dt>Coworker ID</dt>
                 <dd className="mono">{short(COWORKER_ID)}</dd>
-                {identity?.masumi?.agentIdentifier && (
-                  <>
-                    <dt>Masumi agent</dt>
-                    <dd className="mono">{short(identity.masumi.agentIdentifier)}</dd>
-                  </>
-                )}
               </dl>
-              <p style={{ fontSize: 12, color: "var(--text-3)", margin: "14px 0 0" }}>
-                Anyone can trigger a split; the contract decides who gets what, so neither side has to trust the other.
-              </p>
+              <p className="muted small">Any earning agent can raise this way. Atlas is the first.</p>
             </div>
           </div>
         </section>
@@ -241,9 +214,11 @@ export default async function Home() {
         <section className="sec" id="payments">
           <div className="sec-head">
             <h2>Payments by AI agents</h2>
-            <p>Each one checked by Chainlink before any money moves</p>
+            <p>
+              {count("ALLOW")} allowed · {count("DENY")} blocked · {count("REVIEW")} held
+            </p>
           </div>
-          <div className="panel" style={{ overflow: "hidden" }}>
+          <div className="panel overflow">
             {!decisions.ok ? (
               <div className="err">Could not read Chainlink decisions: {decisions.error}</div>
             ) : ds.length === 0 ? (
@@ -259,35 +234,8 @@ export default async function Home() {
             <h2>Tasks from Sokosumi teams</h2>
             <p>Paid through Masumi escrow</p>
           </div>
-          <div className="panel" style={{ overflow: "hidden" }}>
-            <TaskTable tasks={tasks} />
-          </div>
-        </section>
-
-        <section className="sec" id="how">
-          <div className="sec-head">
-            <h2>How it works</h2>
-            <p>Three systems, one job each</p>
-          </div>
-          <div className="steps3">
-            <div>
-              <div className="n">1</div>
-              <b>Atlas does real work</b>
-              <span>Teams hire it on the Sokosumi marketplace and other AI agents pay it per report. It checks a Cardano wallet before you send money to it.</span>
-            </div>
-            <div>
-              <div className="n">2</div>
-              <b>Chainlink checks before paying</b>
-              <span>
-                A workflow running on many independent computers confirms the money goes to the investor contract, that Atlas is rated well, and that two AI
-                auditors agree. Only then may the buyer pay.
-              </span>
-            </div>
-            <div>
-              <div className="n">3</div>
-              <b>Cardano pays investors first</b>
-              <span>The contract can only release money by paying each investor their share and Atlas the rest. The agent never holds the money first.</span>
-            </div>
+          <div className="panel overflow">
+            <TaskTable tasks={tasks} now={renderedAt} />
           </div>
         </section>
 
@@ -297,25 +245,22 @@ export default async function Home() {
             <p>
               Investor contract{" "}
               <a className="mono" href={cardanoscan.address(SPLITTER)} target="_blank" rel="noreferrer">
-                {short(SPLITTER)}
+                {short(SPLITTER)} ↗
               </a>
             </p>
-            <p>Splits are enforced by the contract itself.</p>
           </div>
           <div>
             <h4>On Base Sepolia</h4>
             <p>
               Ratings and payment checks{" "}
               <a className="mono" href={basescan.address(REGISTRY)} target="_blank" rel="noreferrer">
-                {short(REGISTRY)}
+                {short(REGISTRY)} ↗
               </a>
             </p>
-            <p>Written by Chainlink CRE workflows.</p>
           </div>
           <div>
             <h4>About this page</h4>
-            <p>Every figure is read live from public blockchains and refreshes every 20 seconds.</p>
-            <p>Test networks and test money only.</p>
+            <p>Every figure is read live from public blockchains. Test networks and test money only.</p>
           </div>
         </footer>
       </main>
@@ -323,16 +268,25 @@ export default async function Home() {
   );
 }
 
+function Stat({ k, v, s, accent, danger }: { k: string; v: string; s: string; accent?: boolean; danger?: boolean }) {
+  return (
+    <div className={`stat${accent ? " accent" : ""}`}>
+      <div className="k">{k}</div>
+      <div className="v num" style={danger ? { color: "var(--red)" } : undefined}>
+        {v}
+      </div>
+      <div className="s">{s}</div>
+    </div>
+  );
+}
+
 function Badges({ identity, rated }: { identity: AgentIdentity | null; rated: boolean }) {
   const registered = identity?.masumi?.state === "RegistrationConfirmed";
   return (
     <div className="tags">
-      <span className="tag ok">Live on Sokosumi · TOKEN2049 workspace</span>
-      <span className={`tag ${registered ? "ok" : ""}`}>
-        {registered ? "Registered on Masumi" : identity?.masumi?.state ? `Masumi · ${identity.masumi.state}` : "Masumi registry · pending"}
-      </span>
-      {rated && <span className="tag ok">Rating verified by Chainlink</span>}
-      {identity?.paidTasks && <span className="tag ok">Accepting paid tasks</span>}
+      <span className="tag ok">Live on Sokosumi</span>
+      <span className={`tag ${registered ? "ok" : ""}`}>{registered ? "Registered on Masumi" : "Masumi registry · pending"}</span>
+      {rated && <span className="tag ok">Rated by Chainlink</span>}
     </div>
   );
 }
@@ -354,7 +308,7 @@ function AgentTable({ decisions, payments }: { decisions: Decision[]; payments: 
           <th style={{ width: "34%" }}>Request</th>
           <th>Chainlink check</th>
           <th>Paid on Cardano</th>
-          <th>Split to investor</th>
+          <th>Split to backer</th>
         </tr>
       </thead>
       <tbody>
@@ -365,7 +319,13 @@ function AgentTable({ decisions, payments }: { decisions: Decision[]; payments: 
             <tr key={d.requestId}>
               <td data-l="Request">
                 <div className="title-cell">
-                  {d.verdict === "ALLOW" ? (p ? `Wallet report · ${tusdm(p.amount)} tUSDM` : "Approved · payment pending") : d.verdict === "DENY" ? "Payment blocked" : "Payment held for review"}
+                  {d.verdict === "ALLOW"
+                    ? p
+                      ? `Wallet report · ${tusdm(p.amount)} tUSDM`
+                      : "Approved · payment pending"
+                    : d.verdict === "DENY"
+                      ? "Payment blocked"
+                      : "Payment held"}
                   <small>
                     {ago(d.decidedAt)} · receipt <span className="mono">{short(d.requestId)}</span>
                   </small>
@@ -378,10 +338,10 @@ function AgentTable({ decisions, payments }: { decisions: Decision[]; payments: 
               </td>
               <td data-l="Chainlink check">
                 <span className={`badge ${d.verdict}`}>{d.verdict === "ALLOW" ? "allowed" : d.verdict === "DENY" ? "blocked" : "held"}</span>
-                <div style={{ marginTop: 5, fontSize: 12, color: "var(--text-3)" }}>
+                <div className="sub-line">
                   rating {d.ratingUsed} ·{" "}
                   <a className="mono hashlink" href={basescan.tx(d.txHash)} target="_blank" rel="noreferrer">
-                    {short(d.txHash)}
+                    {short(d.txHash)} ↗
                   </a>
                 </div>
               </td>
@@ -389,9 +349,9 @@ function AgentTable({ decisions, payments }: { decisions: Decision[]; payments: 
                 {p ? (
                   <>
                     <Tick state="done">Into the contract</Tick>
-                    <div style={{ marginTop: 4 }}>
+                    <div className="sub-line">
                       <a className="mono hashlink" href={cardanoscan.tx(p.txHash)} target="_blank" rel="noreferrer">
-                        {short(p.txHash)}
+                        {short(p.txHash)} ↗
                       </a>
                     </div>
                   </>
@@ -399,13 +359,13 @@ function AgentTable({ decisions, payments }: { decisions: Decision[]; payments: 
                   <Tick state={d.verdict === "ALLOW" ? "wait" : "none"}>{d.verdict === "ALLOW" ? "Waiting for the buyer" : "Never paid"}</Tick>
                 )}
               </td>
-              <td data-l="Split to investor">
+              <td data-l="Split to backer">
                 {p?.splitTx ? (
                   <>
-                    <Tick state="done">Investor and Atlas paid</Tick>
-                    <div style={{ marginTop: 4 }}>
+                    <Tick state="done">Backer and Atlas paid</Tick>
+                    <div className="sub-line">
                       <a className="mono hashlink" href={cardanoscan.tx(p.splitTx)} target="_blank" rel="noreferrer">
-                        {short(p.splitTx)}
+                        {short(p.splitTx)} ↗
                       </a>
                     </div>
                   </>
@@ -434,7 +394,7 @@ const STAGE: Record<string, string> = {
   failed: "Needs attention",
 };
 
-function TaskTable({ tasks }: { tasks: CoworkerTask[] | null }) {
+function TaskTable({ tasks, now }: { tasks: CoworkerTask[] | null; now: number }) {
   if (tasks === null) return <div className="empty">The Sokosumi worker is not reachable from this page right now.</div>;
   if (tasks.length === 0) return <div className="empty">No Sokosumi tasks yet.</div>;
   return (
@@ -469,9 +429,7 @@ function TaskTable({ tasks }: { tasks: CoworkerTask[] | null }) {
               {t.resultHash ? (
                 <>
                   <Tick state="done">{t.delivered === false ? "Guidance sent" : "Report delivered"}</Tick>
-                  <div style={{ marginTop: 4 }} className="mono hashlink">
-                    {short(t.resultHash)}
-                  </div>
+                  <div className="sub-line mono">{short(t.resultHash)}</div>
                 </>
               ) : (
                 <Tick state="wait">In progress</Tick>
@@ -481,12 +439,14 @@ function TaskTable({ tasks }: { tasks: CoworkerTask[] | null }) {
               {t.collectionTx ? (
                 <>
                   <Tick state="done">{t.collectedAtomicUnits ? `${tusdm(t.collectedAtomicUnits)} tUSDM` : "Collected"}</Tick>
-                  <div style={{ marginTop: 4 }}>
+                  <div className="sub-line">
                     <a className="mono hashlink" href={cardanoscan.tx(t.collectionTx)} target="_blank" rel="noreferrer">
-                      {short(t.collectionTx)}
+                      {short(t.collectionTx)} ↗
                     </a>
                   </div>
                 </>
+              ) : t.paid && t.unlockTime ? (
+                <Tick state="wait">Payout unlocks in {countdown(Number(t.unlockTime), now)}</Tick>
               ) : (
                 <Tick state={t.paid ? "wait" : "none"}>{t.paid ? "After the dispute window" : "—"}</Tick>
               )}

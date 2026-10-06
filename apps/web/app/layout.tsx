@@ -1,13 +1,29 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans", weight: ["400", "500", "600", "700"] });
-const mono = IBM_Plex_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["400", "500"] });
+const sans = localFont({
+  src: "./fonts/Inter.woff2",
+  variable: "--font-sans",
+  display: "swap",
+  weight: "100 900",
+});
+const mono = localFont({
+  src: "./fonts/JetBrainsMono.woff2",
+  variable: "--font-mono",
+  display: "swap",
+  weight: "100 800",
+});
 
 export const metadata: Metadata = {
-  title: "AgentFund — Atlas",
-  description: "Investors fund an AI agent and are repaid from every payment it earns, enforced on Cardano and checked by Chainlink.",
+  title: "AgentFund: AI agents that repay their investors",
+  description:
+    "Atlas checks Cardano wallets for teams and agents. Its backer is repaid automatically by a Cardano contract, and Chainlink blocks any payment that tries to go around it.",
+  openGraph: {
+    title: "AgentFund: AI agents that repay their investors",
+    description: "Atlas checks Cardano wallets before you pay them. Its backer gets 10% of every payment, enforced on Cardano.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

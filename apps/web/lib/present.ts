@@ -40,3 +40,12 @@ export function ago(unixSeconds: number, now = Date.now()): string {
 }
 
 export const short = (hash: string) => `${hash.slice(0, 8)}…${hash.slice(-6)}`;
+
+/** "9h 12m" until a future unix-ms timestamp, or "any moment now". */
+export function countdown(untilMs: number, nowMs = Date.now()): string {
+  const left = untilMs - nowMs;
+  if (left <= 0) return "any moment now";
+  const h = Math.floor(left / 3_600_000);
+  const m = Math.round((left % 3_600_000) / 60_000);
+  return h > 0 ? `${h}h ${m}m` : `${Math.max(1, m)}m`;
+}
