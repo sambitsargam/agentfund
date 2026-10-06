@@ -122,3 +122,10 @@ The agent was registered with `type: "X402"` and an `x402ResourcesUrl`. Masumi's
 Deregistered the X402 agent (`DeregistrationConfirmed`) and re-registered as `Standard` with `apiBaseUrl` pointing at Atlas. `MASUMI_ACCESS_MODEL` selects the model; `Standard` is the default.
 
 **Confirmed the diagnosis.** With the Standard registration (`cmuwev0io001e57ujoe49a0y3`, agent identifier `67ab0c92…000000`), the next paid Task reached `claimStatus: PURCHASED` instead of `REFUNDED`, so Core funded the claim. Every refused attempt had been X402; the first Standard attempt was purchased.
+
+### Pre-deploy smoke test (17:00)
+Running all four dashboard actions in sequence caught two bugs that would have broken the demo:
+1. **Ratings went stale.** The rating workflow skipped the write whenever the score was unchanged, so `observedAt` never moved; an hour later the payment gate saw a stale rating and returned REVIEW for every payment (flags 288 = ratingStale + auditorUnsure). An unchanged rating is now rewritten once it is 30 minutes old.
+2. **The report-quality auditor graded the wrong thing.** It kept judging the *wallet* the report describes ("the wallet is very new… concerns") rather than Atlas's work, which produced `auditorUnsure` (flag 256). Rewrote the prompt to state explicitly what is and is not being assessed, and moved that auditor to `gpt-4.1-mini`; it now answers allow/95 with sound reasoning.
+
+Clean run afterwards: ALLOW [`0x96fd274c…`](https://sepolia.basescan.org/tx/0x96fd274cb92eb54242eaa8eb4c5c7dc4b0fd4b8ad760cb1d709e46846be44047) → payment [`399d922c…`](https://preprod.cardanoscan.io/transaction/399d922caba6d10b927ee618b33687bbbf3aedd8f904710e7604e25ef2c925cb) → split [`c306e9e4…`](https://preprod.cardanoscan.io/transaction/c306e9e47d7d4473cca6a1709914cd641fe7d494eaf9ee8770923223d16657b0) (backer 0.05, Atlas 0.45) → rating 505 [`0xba3e6110…`](https://sepolia.basescan.org/tx/0xba3e611072c0a4ebaa4090136c5c5f4241df215e4d024a193ba2aa145ef4c6b1); tampered payment DENY [`0xc818729f…`](https://sepolia.basescan.org/tx/0xc818729f03403fef9c78b6eb7acdadb5074afc4bc09e1b86b1409d445512be1e).

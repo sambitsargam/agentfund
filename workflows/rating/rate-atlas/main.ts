@@ -88,6 +88,9 @@ const observe = (node: NodeRuntime<Config>, projectId: string, challenge: Hex): 
   return { earnings, txCount, probeOk, latencyMs };
 };
 
+/** Rewrite an unchanged rating once it is this old, so the payment gate never sees it as stale. */
+const MAX_RATING_AGE_SECONDS = 1800;
+
 const registryAbi = parseAbi([
   "function getRating(bytes32 agentId) view returns ((uint16 score, uint256 earnings, uint32 paymentCount, bool probeOk, uint32 latencyMs, uint64 observedAt))",
 ]);
@@ -151,14 +154,18 @@ const rate = (runtime: Runtime<Config>, trigger: string): string => {
 
   runtime.log(`Agreed observation and score: ${JSON.stringify(summary)}`);
 
+  // A rating is only useful while it is fresh: the payment gate rejects a stale one. So an
+  // unchanged score still gets rewritten once it is older than MAX_RATING_AGE_SECONDS, which
+  // keeps the timestamp moving without writing on every run.
+  const ageSeconds = previous.observedAt === 0n ? Infinity : Math.floor(now.getTime() / 1000) - Number(previous.observedAt);
   const unchanged =
     previous.observedAt > 0n &&
     BigInt(previous.score) === score.total &&
     previous.earnings === observation.earnings &&
     BigInt(previous.paymentCount) === observation.txCount &&
     previous.probeOk === observation.probeOk;
-  if (unchanged) {
-    runtime.log(`Rating unchanged at ${score.total}; skipping write`);
+  if (unchanged && ageSeconds < MAX_RATING_AGE_SECONDS) {
+    runtime.log(`Rating unchanged at ${score.total}, written ${ageSeconds}s ago; skipping write`);
     return JSON.stringify({ ...summary, written: false });
   }
 
