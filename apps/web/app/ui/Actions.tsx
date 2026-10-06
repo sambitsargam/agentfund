@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { outcomeFor, gateExplanation } from "../../lib/demo-outcome";
 
 type Action = "pay" | "tamper" | "distribute" | "rate";
 type StepState = "pending" | "active" | "done" | "blocked";
@@ -54,21 +55,19 @@ function toSteps(action: Action, lines: string[], done: boolean, subject?: strin
         ...steps[1]!,
         state: blocked ? "blocked" : "done",
         note: blocked
-          ? verdict === "DENY"
-            ? "Blocked by Chainlink: the money was redirected away from the investor contract. Nothing was paid."
-            : "Held by Chainlink: the checks were not all satisfied. Nothing was paid."
+          ? gateExplanation(lines).note
           : "rating ✓ · money goes to the investor contract ✓ · 2 AI auditors ✓",
         href: gateTx ? BASESCAN + gateTx : undefined,
         hash: gateTx,
       };
       if (blocked) return steps;
-      steps[2] = { ...steps[2]!, state: payTx ? "done" : "active", note: payTx ? `confirmed in ${seconds ?? "~30"} s` : "Cardano confirms in about 20–60 seconds" };
+      steps[2] = { ...steps[2]!, state: payTx ? "done" : "active", note: payTx ? `submitted in ${seconds ?? "~30"} s; open the explorer to check confirmation` : "Cardano confirms in about 20–60 seconds" };
     }
     if (payTx) {
       steps[2] = { ...steps[2]!, state: "done", href: CARDANOSCAN + payTx, hash: payTx };
       steps[3] = { ...steps[3]!, state: "done", note: "receipt carries the Chainlink approval id" };
     }
-    if (report) steps[4] = { ...steps[4]!, state: "done", note: `verdict: ${report} risk` };
+    if (report) steps[4] = { ...steps[4]!, state: "done", note: `history warning level: ${report} (experimental)` };
     else if (payTx && !done) steps[4] = { ...steps[4]!, state: "active" };
     return steps;
   }
@@ -97,39 +96,10 @@ function toSteps(action: Action, lines: string[], done: boolean, subject?: strin
 }
 
 /** Says plainly whether the run did what the button promised. A blocked tamper is a success. */
-function Outcome({ action, steps }: { action: Action; steps: Step[] }) {
-  const blocked = steps.some((s) => s.state === "blocked");
-  if (action === "tamper") {
-    return blocked ? (
-      <div className="outcome good">
-        <b>Blocked, exactly as intended.</b>
-        <span>Chainlink spotted that the money was being redirected away from the investor contract, so the buyer paid nothing. This is the protection working.</span>
-      </div>
-    ) : (
-      <div className="outcome bad">
-        <b>The tampered payment was not blocked.</b>
-        <span>That should not happen. Check the payment gate's policy.</span>
-      </div>
-    );
-  }
-  if (blocked) {
-    return (
-      <div className="outcome warn">
-        <b>Chainlink did not approve this payment, so nothing was paid.</b>
-        <span>The buyer keeps its money whenever a check does not pass.</span>
-      </div>
-    );
-  }
-  const title =
-    action === "pay" ? "Payment complete." : action === "distribute" ? "Split complete." : "Rating refreshed.";
-  const body =
-    action === "pay"
-      ? "Chainlink approved it, the money went into the investor contract, and Atlas delivered the wallet report. You can run the same check free in the box above."
-      : action === "distribute"
-        ? "The contract released the money and paid the backer their share first."
-        : "Chainlink re-read Atlas's earnings, probed its service and recorded the score on Base Sepolia.";
+function Outcome({ action, lines, ok }: { action: Action; lines: string[]; ok: boolean | null }) {
+  const { tone, title, body } = outcomeFor(action, lines, ok);
   return (
-    <div className="outcome good">
+    <div className={`outcome ${tone}`}>
       <b>{title}</b>
       <span>{body}</span>
     </div>
@@ -143,9 +113,11 @@ export function Actions({ enabled, videoUrl, subject }: { enabled: boolean; vide
   const [lines, setLines] = useState<string[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [ok, setOk] = useState<boolean | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [runId, setRunId] = useState<string | null>(null);
   const [showLog, setShowLog] = useState(false);
-  const [server, setServer] = useState<{ busy: boolean; runningId: string | null; runningAction: Action | null; cooldown: Record<Action, number> } | null>(null);
+  const [server, setServer] = useState<{ busy: boolean; runningId: string | null; runningAction: Action | null; cooldown: Record<Action, number>; automaticKeeper: boolean } | null>(null);
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
   const followed = useRef<string | null>(null);
@@ -154,25 +126,43 @@ export function Actions({ enabled, videoUrl, subject }: { enabled: boolean; vide
     (id: string, which: Action) => {
       if (followed.current === id) return;
       followed.current = id;
+      setRunId(id);
+      setLines([]);
       setAction(which);
       setBusy(which);
       setDone(false);
+      setOk(null);
       if (poll.current) clearInterval(poll.current);
       poll.current = setInterval(async () => {
-        const r = await fetch(`/api/demo/job/${id}`);
-        if (!r.ok) {
-          if (poll.current) clearInterval(poll.current);
-          setBusy(null);
-          return;
-        }
-        const j = (await r.json()) as { lines: string[]; done: boolean };
-        setLines(j.lines);
-        if (j.done) {
+        try {
+          const r = await fetch(`/api/demo/job/${id}`);
+          if (!r.ok) {
+            if (poll.current) clearInterval(poll.current);
+            setBusy(null);
+            if (tick.current) clearInterval(tick.current);
+            setOk(false);
+            setDone(true);
+            return;
+          }
+          const j = (await r.json()) as { action: Action; lines: string[]; done: boolean; ok: boolean | null };
+          if (followed.current !== id) return;
+          setAction(j.action);
+          setLines(j.lines);
+          if (j.done) {
+            if (poll.current) clearInterval(poll.current);
+            if (tick.current) clearInterval(tick.current);
+            setBusy(null);
+            setDone(true);
+            setOk(j.ok);
+            router.refresh();
+          }
+        } catch {
           if (poll.current) clearInterval(poll.current);
           if (tick.current) clearInterval(tick.current);
           setBusy(null);
+          setOk(null);
           setDone(true);
-          router.refresh();
+          setNote("Connection lost. Check the transaction links before starting another run.");
         }
       }, 1500);
     },
@@ -185,9 +175,9 @@ export function Actions({ enabled, videoUrl, subject }: { enabled: boolean; vide
     const read = async () => {
       try {
         const r = await fetch("/api/demo/status");
-        const s = (await r.json()) as { enabled: boolean; busy?: boolean; runningId?: string | null; runningAction?: Action | null; cooldown?: Record<Action, number> };
+        const s = (await r.json()) as { enabled: boolean; busy?: boolean; runningId?: string | null; runningAction?: Action | null; cooldown?: Record<Action, number>; automaticKeeper?: boolean };
         if (stop || !s.enabled) return;
-        setServer({ busy: Boolean(s.busy), runningId: s.runningId ?? null, runningAction: s.runningAction ?? null, cooldown: s.cooldown ?? ({} as Record<Action, number>) });
+        setServer({ busy: Boolean(s.busy), runningId: s.runningId ?? null, runningAction: s.runningAction ?? null, cooldown: s.cooldown ?? ({} as Record<Action, number>), automaticKeeper: Boolean(s.automaticKeeper) });
         // Someone else started a run: watch it rather than showing a refusal.
         if (s.busy && s.runningId && s.runningAction) follow(s.runningId, s.runningAction);
       } catch {
@@ -217,37 +207,35 @@ export function Actions({ enabled, videoUrl, subject }: { enabled: boolean; vide
       setAction(next);
       setNote(null);
       setDone(false);
+      setOk(null);
       setLines([]);
+      setShowLog(false);
+      setRunId(null);
       setElapsed(0);
       const started = Date.now();
       tick.current = setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 1000);
 
-      const res = await fetch(`/api/demo/${next}`, { method: "POST" });
-      const body = (await res.json()) as { id?: string; lines?: string[]; error?: string; retryAfter?: number };
-      if (!res.ok || !body.id) {
-        if (tick.current) clearInterval(tick.current);
-        setNote(body.retryAfter ? `${body.error} Try again in ${body.retryAfter}s.` : (body.error ?? "Could not start that run."));
-        setBusy(null);
-        setAction(null);
-        return;
-      }
-      setLines(body.lines ?? []);
-      followed.current = body.id;
-      poll.current = setInterval(async () => {
-        const r = await fetch(`/api/demo/job/${body.id}`);
-        if (!r.ok) return;
-        const j = (await r.json()) as { lines: string[]; done: boolean };
-        setLines(j.lines);
-        if (j.done) {
-          if (poll.current) clearInterval(poll.current);
+      try {
+        const res = await fetch(`/api/demo/${next}`, { method: "POST" });
+        const body = (await res.json()) as { id?: string; lines?: string[]; error?: string; retryAfter?: number };
+        if (!res.ok || !body.id) {
           if (tick.current) clearInterval(tick.current);
+          setNote(body.retryAfter ? `${body.error} Try again in ${body.retryAfter}s.` : (body.error ?? "Could not start that run."));
           setBusy(null);
-          setDone(true);
-          router.refresh();
+          setAction(null);
+          return;
         }
-      }, 1500);
+        setLines(body.lines ?? []);
+        follow(body.id, next);
+      } catch {
+        if (tick.current) clearInterval(tick.current);
+        setBusy(null);
+        setOk(null);
+        setDone(true);
+        setNote("Could not verify whether the run started. Check the server status before trying again.");
+      }
     },
-    [busy, router],
+    [busy, follow],
   );
 
   const steps = action ? toSteps(action, lines, done, subject) : [];
@@ -265,8 +253,9 @@ export function Actions({ enabled, videoUrl, subject }: { enabled: boolean; vide
             const wait = server?.cooldown?.[b.action] ?? 0;
             const running = server?.busy ?? busy !== null;
             const mine = busy === b.action;
-            const blocked = running || wait > 0;
-            const why = mine
+            const automatic = b.action === "distribute" && server?.automaticKeeper;
+            const blocked = running || wait > 0 || Boolean(automatic);
+            const why = automatic ? "Automatic repayment is active" : mine
               ? "running…"
               : running
                 ? "another run is in progress"
@@ -297,7 +286,9 @@ export function Actions({ enabled, videoUrl, subject }: { enabled: boolean; vide
 
       {note && <div className="action-note">{note}</div>}
 
-      {steps.length > 0 && done && action && <Outcome action={action} steps={steps} />}
+      {action && <p className="action-note">{done ? "Last completed run" : "Current run"}: {BUTTONS.find(b => b.action === action)?.title}{runId && <> · run {runId.slice(0, 8)}</>}{done && <button className="log-toggle" onClick={() => { setAction(null); setLines([]); setShowLog(false); setNote(null); }}>Dismiss result</button>}</p>}
+
+      {steps.length > 0 && done && action && <Outcome action={action} lines={lines} ok={ok} />}
 
       {steps.length > 0 && (
         <>

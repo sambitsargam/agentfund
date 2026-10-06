@@ -1,6 +1,8 @@
 import { ATLAS_DEAL, basescan, cardanoscan } from "@agentfund/shared";
-import { COWORKER_ID, REGISTRY, SPLITTER, readCardano, readDecisions, readRating, type Decision, type Payment } from "../lib/chain";
-import { readAgentIdentity, readCoworkerTasks, type AgentIdentity, type CoworkerTask } from "../lib/sokosumi";
+import { COWORKER_ID, REGISTRY, SPLITTER, readCardano, readDecisions, readRating, readTaskRepayments, type Decision, type Payment } from "../lib/chain";
+import { TaskRepayments } from "./ui/TaskRepayments";
+import { FundingJourney } from "./ui/FundingJourney";
+import { readAgentIdentity, readCoworkerTasks, readReliability, type AgentIdentity, type CoworkerTask } from "../lib/sokosumi";
 import { ago, countdown, flagWords, scoreParts, short, tusdm } from "../lib/present";
 import { Actions } from "./ui/Actions";
 import { CheckWallet } from "./ui/CheckWallet";
@@ -24,17 +26,19 @@ async function settle<T>(p: Promise<T>): Promise<Settled<T>> {
 
 export default async function Home() {
   const renderedAt = Date.now();
-  const [rating, decisions, cardano, tasks, identity] = await Promise.all([
+  const [rating, decisions, cardano, tasks, identity, reliability] = await Promise.all([
     settle(readRating()),
     settle(readDecisions()),
     settle(readCardano()),
     readCoworkerTasks(),
     readAgentIdentity(),
+    readReliability(),
   ]);
 
   const investor = ATLAS_DEAL.investors[0]!;
   const pct = investor.bps / 100;
   const c = cardano.ok ? cardano.value : null;
+  const repayments = await readTaskRepayments(tasks, c);
   const ds = decisions.ok ? decisions.value : [];
   const r = rating.ok ? rating.value : null;
   const toAtlas = c ? c.splits.reduce((s, x) => s + BigInt(x.atlas), 0n) : 0n;
@@ -66,8 +70,8 @@ export default async function Home() {
               AI agents that earn can now <b>raise money</b>, and repay it automatically.
             </h1>
             <p className="sub">
-              Atlas tells teams and agents who they are about to pay: a person, a contract, or a registered AI agent, and whether it can be trusted. Its backer
-              gets {pct}% of every payment Atlas earns, enforced by a Cardano contract, and Chainlink checks every payment before it is made.
+              Atlas tells teams and agents who they are about to pay: a person, a contract, or a registered AI agent, and what warnings its recorded history raises. Its backer
+              gets {pct}% of earnings released by the Cardano contract. Agent payments go directly there after a Chainlink check; Sokosumi earnings arrive through a selling-wallet sweep.
             </p>
             <div className="hero-cta">
               <a className="btn primary" href="#check">
@@ -90,7 +94,7 @@ export default async function Home() {
               <span className="n">2</span>
               <div>
                 <b>Checked by Chainlink</b>
-                <span>Every agent payment is approved or blocked before any money moves.</span>
+                <span>Our buyer checks with Chainlink before making an agent payment.</span>
               </div>
             </li>
             <li>
@@ -151,8 +155,7 @@ export default async function Home() {
             <div className="panel panel-pad">
               <h3 className="card-title">Atlas</h3>
               <p className="card-sub">
-                Identifies who is behind a Cardano address — a person, a contract, or a registered AI agent — and whether its history and the wallets around it
-                look sound.
+                Shows Cardano address history and registry claims. Registration does not certify trustworthiness; fraud-detection accuracy remains unvalidated.
               </p>
               <Badges identity={identity} rated={Boolean(r)} />
               {r ? (
@@ -210,7 +213,8 @@ export default async function Home() {
                 <dt>Coworker ID</dt>
                 <dd className="mono">{short(COWORKER_ID)}</dd>
               </dl>
-              <p className="muted small">Any earning agent can raise this way. Atlas is the first.</p>
+              <p className="muted small">Atlas demonstrates one fixed seed deal. Additional agents and investors require a separate deal.</p>
+              <FundingJourney activity={c} />
             </div>
           </div>
         </section>
@@ -228,7 +232,15 @@ export default async function Home() {
             ) : ds.length === 0 ? (
               <div className="empty">No agent has asked to pay Atlas yet.</div>
             ) : (
-              <AgentTable decisions={ds} payments={c?.payments ?? []} />
+              <>
+                <AgentTable decisions={ds.slice(0, 5)} payments={c?.payments ?? []} />
+                {ds.length > 5 && (
+                  <details className="payment-history">
+                    <summary>View {ds.length - 5} earlier payments</summary>
+                    <AgentTable decisions={ds.slice(5)} payments={c?.payments ?? []} />
+                  </details>
+                )}
+              </>
             )}
           </div>
         </section>
@@ -238,6 +250,8 @@ export default async function Home() {
             <h2>Tasks from Sokosumi teams</h2>
             <p>Paid through Masumi escrow</p>
           </div>
+          {reliability && <p className="muted">Observed paid Task attempts: {reliability.paidCollectionsVerified} collected · {reliability.paidTasksFailed} failed · {reliability.paidTasksOngoing} ongoing. Includes historical failures; this sample does not establish marketplace reliability.</p>}
+          <TaskRepayments tasks={tasks} repayments={repayments} />
           <div className="panel overflow">
             <TaskTable tasks={tasks} now={renderedAt} />
           </div>
@@ -436,7 +450,7 @@ function TaskTable({ tasks, now }: { tasks: CoworkerTask[] | null; now: number }
                   <div className="sub-line mono">{short(t.resultHash)}</div>
                 </>
               ) : (
-                <Tick state="wait">In progress</Tick>
+                <Tick state={t.stage === "failed" ? "none" : "wait"}>{t.stage === "failed" ? "Stopped; inspect task state" : "In progress"}</Tick>
               )}
             </td>
             <td data-l="Collected">
@@ -449,6 +463,8 @@ function TaskTable({ tasks, now }: { tasks: CoworkerTask[] | null; now: number }
                     </a>
                   </div>
                 </>
+              ) : t.stage === "failed" ? (
+                <Tick state="none">Not verified</Tick>
               ) : t.paid && t.unlockTime ? (
                 <Tick state="wait">Payout unlocks in {countdown(Number(t.unlockTime), now)}</Tick>
               ) : (

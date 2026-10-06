@@ -15,6 +15,7 @@ export interface CoworkerTask {
   resultHash: string | null;
   collectionTx: string | null;
   collectedAtomicUnits: string | null;
+  collectionAddress?: string | null;
   error: string | null;
 }
 
@@ -46,4 +47,20 @@ export async function readAgentIdentity(): Promise<AgentIdentity | null> {
   } catch {
     return null;
   }
+}
+
+export interface ReliabilitySnapshot {
+  observedAt: string;
+  paidTasksSeen: number;
+  paidCollectionsVerified: number;
+  paidTasksFailed: number;
+  paidTasksOngoing: number;
+  scope: string;
+}
+export async function readReliability(): Promise<ReliabilitySnapshot | null> {
+  if (!process.env.COWORKER_URL) return null;
+  try {
+    const r = await fetch(`${process.env.COWORKER_URL.replace(/\/$/, "")}/reliability`, { next: { revalidate: 20 }, signal: AbortSignal.timeout(8_000) });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
 }

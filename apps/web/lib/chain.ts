@@ -1,7 +1,11 @@
 import "server-only";
+import { allPages, summarizeCardano, type BfIo, type CardanoActivity, type CardanoTransaction } from "./cardano-activity";
+export type { Payment, Split, CardanoActivity } from "./cardano-activity";
 import { createPublicClient, http, keccak256, parseAbi, parseAbiItem, stringToBytes, type Hex } from "viem";
 import { baseSepolia } from "viem/chains";
-import { ATLAS_DEAL, BLOCKFROST_PREPROD_URL, TUSDM_MASUMI_UNIT, TUSDM_X402_UNIT } from "@agentfund/shared";
+import { ATLAS_DEAL, ATLAS_MASUMI_PAYOUT_ADDRESS, BLOCKFROST_PREPROD_URL } from "@agentfund/shared";
+import { traceTaskRepayment, type TaskRepayment } from "./task-repayment";
+import type { CoworkerTask } from "./sokosumi";
 
 export const REGISTRY = "0xee171354e30f24428eEaAaDA952eEC7479b08131" as const;
 const REGISTRY_FROM_BLOCK = 47_745_260n;
@@ -96,106 +100,50 @@ export async function readDecisions(): Promise<Decision[]> {
 
 // Cardano -------------------------------------------------------------------------
 
-interface BfAmount {
-  unit: string;
-  quantity: string;
-}
-interface BfIo {
-  address: string;
-  amount: BfAmount[];
-  output_index?: number;
-  tx_hash?: string;
-  inline_datum?: string | null;
-}
-
 async function blockfrost<T>(path: string): Promise<T | null> {
   const projectId = process.env.BLOCKFROST_PROJECT_ID;
   if (!projectId) throw new Error("BLOCKFROST_PROJECT_ID is not set");
-  const res = await fetch(BLOCKFROST_PREPROD_URL + path, { headers: { project_id: projectId }, next: { revalidate: 20 } });
+  const res = await fetch(BLOCKFROST_PREPROD_URL + path, { headers: { project_id: projectId }, next: { revalidate: 20 }, signal: AbortSignal.timeout(15_000) });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Blockfrost ${path} → ${res.status}`);
   return (await res.json()) as T;
 }
 
-const tusdmOf = (amounts: BfAmount[], unit: string) =>
-  amounts.filter((a) => a.unit === unit).reduce((s, a) => s + BigInt(a.quantity), 0n);
-
-export interface Payment {
-  txHash: string;
-  index: number;
-  time: number;
-  unit: "x402" | "masumi";
-  amount: string;
-  requestId: string | null;
-  splitTx: string | null;
-}
-
-export interface Split {
-  txHash: string;
-  time: number;
-  coins: number;
-  investor: string;
-  atlas: string;
-}
-
-export interface CardanoActivity {
-  payments: Payment[];
-  splits: Split[];
-  earnedX402: string;
-  earnedMasumi: string;
-  repaidToInvestor: string;
-  lockedNow: string;
-}
-
-/** Receipt datum Constr 0 [bytes32 requestId] → requestId. */
-function requestIdOf(datum: string | null | undefined): string | null {
-  const m = datum?.match(/^d8799f5820([0-9a-f]{64})ff$/);
-  return m ? `0x${m[1]}` : null;
-}
-
 export async function readCardano(): Promise<CardanoActivity> {
-  const history = (await blockfrost<{ tx_hash: string; block_time: number }[]>(`/addresses/${SPLITTER}/transactions?order=desc&count=30`)) ?? [];
-  const txs = await Promise.all(
-    history.map(async (h) => ({ ...h, utxos: (await blockfrost<{ inputs: BfIo[]; outputs: BfIo[] }>(`/txs/${h.tx_hash}/utxos`))! })),
-  );
-  const investor = ATLAS_DEAL.investors[0]!.address;
-
-  const payments: Payment[] = [];
-  const splits: Split[] = [];
-  const spentBy = new Map<string, string>();
-  for (const tx of txs) {
-    const spent = tx.utxos.inputs.filter((i) => i.address === SPLITTER);
-    if (spent.length > 0) {
-      for (const i of spent) spentBy.set(`${i.tx_hash}#${i.output_index}`, tx.tx_hash);
-      const paid = (address: string) =>
-        tx.utxos.outputs.filter((o) => o.address === address).reduce((s, o) => s + tusdmOf(o.amount, TUSDM_X402_UNIT) + tusdmOf(o.amount, TUSDM_MASUMI_UNIT), 0n);
-      splits.push({ txHash: tx.tx_hash, time: tx.block_time, coins: spent.length, investor: paid(investor).toString(), atlas: paid(ATLAS_DEAL.atlasAddress).toString() });
-    }
-    tx.utxos.outputs.forEach((o, index) => {
-      if (o.address !== SPLITTER) return;
-      const x402 = tusdmOf(o.amount, TUSDM_X402_UNIT);
-      const masumi = tusdmOf(o.amount, TUSDM_MASUMI_UNIT);
-      if (x402 === 0n && masumi === 0n) return;
-      payments.push({
-        txHash: tx.tx_hash,
-        index: o.output_index ?? index,
-        time: tx.block_time,
-        unit: masumi > 0n ? "masumi" : "x402",
-        amount: (x402 + masumi).toString(),
-        requestId: requestIdOf(o.inline_datum),
-        splitTx: null,
-      });
-    });
+  const [history, locked] = await Promise.all([
+    allPages(async (page) => (await blockfrost<{ tx_hash: string; block_time: number }[]>(
+      `/addresses/${SPLITTER}/transactions?order=asc&count=100&page=${page}`,
+    )) ?? []),
+    allPages(async (page) => (await blockfrost<BfIo[]>(`/addresses/${SPLITTER}/utxos?count=100&page=${page}`)) ?? []),
+  ]);
+  const txs: CardanoTransaction[] = [];
+  // Bound the provider fanout instead of issuing the entire history at once.
+  for (let offset = 0; offset < history.length; offset += 10) {
+    txs.push(...await Promise.all(history.slice(offset, offset + 10).map(async (h) => {
+      const utxos = await blockfrost<{ inputs: BfIo[]; outputs: BfIo[] }>(`/txs/${h.tx_hash}/utxos`);
+      if (!utxos) throw new Error(`Transaction ${h.tx_hash} is not available yet`);
+      return { ...h, utxos };
+    })));
   }
-  for (const p of payments) p.splitTx = spentBy.get(`${p.txHash}#${p.index}`) ?? null;
+  return summarizeCardano(txs, locked, SPLITTER);
+}
 
-  const sum = (xs: string[]) => xs.reduce((s, x) => s + BigInt(x), 0n).toString();
-  return {
-    payments,
-    splits,
-    earnedX402: sum(payments.filter((p) => p.unit === "x402").map((p) => p.amount)),
-    earnedMasumi: sum(payments.filter((p) => p.unit === "masumi").map((p) => p.amount)),
-    repaidToInvestor: sum(splits.map((s) => s.investor)),
-    lockedNow: sum(payments.filter((p) => !p.splitTx).map((p) => p.amount)),
-  };
+export async function readTaskRepayments(tasks: CoworkerTask[] | null, activity: CardanoActivity | null): Promise<Record<string, TaskRepayment>> {
+  const result: Record<string, TaskRepayment> = {};
+  const collected = (tasks ?? []).filter(t => t.paid && t.collectionTx);
+  for (let offset = 0; offset < collected.length; offset += 10) {
+    await Promise.all(collected.slice(offset, offset + 10).map(async t => {
+      try {
+        if (!activity) throw new Error("chain unavailable");
+        const receipt = await blockfrost<{ inputs: BfIo[]; outputs: BfIo[] }>(`/txs/${t.collectionTx}/utxos`);
+        if (!receipt) throw new Error("receipt unavailable");
+        result[t.taskId] = traceTaskRepayment(t.collectionTx!, receipt, activity.transactions,
+          t.collectionAddress || process.env.MASUMI_PAYOUT_ADDRESS || ATLAS_MASUMI_PAYOUT_ADDRESS,
+          SPLITTER, t.collectedAtomicUnits);
+      } catch {
+        result[t.taskId] = { status: "unverified", collected: null, paths: [], note: "Could not verify the collection-to-investor path from the chain. The worker's receipt alone does not prove repayment." };
+      }
+    }));
+  }
+  return result;
 }

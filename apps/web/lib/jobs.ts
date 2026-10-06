@@ -1,4 +1,5 @@
 import "server-only";
+import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
@@ -93,6 +94,7 @@ export interface Status {
   /** Seconds still to wait, per action. */
   cooldown: Record<ActionName, number>;
   spendingLeft: number;
+  automaticKeeper: boolean;
 }
 
 export function status(): Status {
@@ -109,12 +111,14 @@ export function status(): Status {
     runningAction: busy ? (job?.action ?? null) : null,
     cooldown,
     spendingLeft: Math.max(0, MAX_SPENDING_RUNS - spendingRuns),
+    automaticKeeper: existsSync(resolve(REPO, "services/keeper/data/loop.lock")),
   };
 }
 
 /** One run at a time, a cooldown per action, and a hard cap on runs that spend test money. */
 export function start(action: ActionName): Job {
   const spec = SPECS[action];
+  if (action === "distribute" && existsSync(resolve(REPO, "services/keeper/data/loop.lock"))) throw new Refused("Automatic repayment is running. It will split confirmed earnings on its next cycle.");
   if (!spec) throw new Refused("Unknown action");
   if (running && jobs.get(running)?.finishedAt === undefined) {
     throw new Refused("Another demo run is in progress. Give it a few seconds.");

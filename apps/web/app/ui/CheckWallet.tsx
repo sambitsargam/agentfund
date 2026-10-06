@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Report } from "@agentfund/shared";
+import type { Report, ReputationCheck } from "@agentfund/shared";
 
 const CARDANOSCAN = "https://preprod.cardanoscan.io";
 
@@ -11,7 +11,7 @@ const PRESETS = [
   { label: "A brand-new wallet", address: "addr_test1qqwdk97gwef6ypkjcd9hhgpls8ela9fdvee2wvaxnkmjqdtj5pvye96gvjtm2jv70mtyqsczypsl8f2d3dgtlcmktk0sv74rjj" },
 ];
 
-type Result = { ok: true; report: Report; cached: boolean } | { ok: false; message: string; hint?: string };
+type Result = { ok: true; report: Report; cached: boolean } | { ok: true; reputation: ReputationCheck } | { ok: false; message: string; hint?: string };
 
 const short = (s: string) => `${s.slice(0, 12)}…${s.slice(-6)}`;
 
@@ -74,6 +74,7 @@ export function CheckWallet({ sokosumiUrl }: { sokosumiUrl: string }) {
           </button>
         ))}
       </div>
+      <p className="muted small">Preprod: history report. Mainnet payment address: public threat-source lookup only.</p>
 
       {busy && <div className="check-skeleton" aria-hidden />}
 
@@ -84,8 +85,13 @@ export function CheckWallet({ sokosumiUrl }: { sokosumiUrl: string }) {
         </div>
       )}
 
-      {result?.ok && <ReportView report={result.report} sokosumiUrl={sokosumiUrl} />}
-      {result?.ok && <WhoPays />}
+      {result?.ok && "report" in result && <ReportView report={result.report} sokosumiUrl={sokosumiUrl} />}
+      {result?.ok && "report" in result && <WhoPays />}
+      {result?.ok && "reputation" in result && <div className="report-block" role="status">
+        <h4>{result.reputation.listed ? "Public threat report found" : "No match · safety unknown"}</h4>
+        <p>{result.reputation.meaning}</p><p className="muted small">{result.reputation.scope}</p>
+        {result.reputation.sources.map(source => <a key={source} href={source} target="_blank" rel="noreferrer">Inspect the pinned source ↗</a>)}
+      </div>}
     </div>
   );
 }
@@ -98,13 +104,12 @@ function WhoPays() {
         <div>
           <b>AI agents, before they send money</b>
           <span>
-            An agent about to pay a new address asks Atlas first, for 0.50 tUSDM over x402, and gets a machine-readable verdict. Cheap insurance against
-            paying the wrong wallet.
+            An agent about to pay a new address asks Atlas first, for 0.50 tUSDM over x402, and gets a machine-readable verdict. A history check with explicit limits; it cannot certify the recipient.
           </span>
         </div>
         <div>
           <b>Teams on Sokosumi</b>
-          <span>A treasury, grants or OTC team mentions Atlas in chat and gets this report in seconds, instead of fifteen minutes on an explorer.</span>
+          <span>A treasury, grants or OTC team mentions Atlas in chat and gets this report in seconds, with the facts, warnings and source links in one place.</span>
         </div>
         <div>
           <b>Why not just an explorer?</b>
@@ -117,9 +122,9 @@ function WhoPays() {
 }
 
 const VERDICT: Record<string, { label: string; cls: string }> = {
-  low: { label: "Low risk", cls: "low" },
-  medium: { label: "Medium risk", cls: "medium" },
-  high: { label: "High risk", cls: "high" },
+  low: { label: "Few history warnings", cls: "low" },
+  medium: { label: "Some history warnings", cls: "medium" },
+  high: { label: "Many history warnings", cls: "high" },
   unknown: { label: "Unknown", cls: "unknown" },
 };
 
@@ -158,7 +163,7 @@ function ReportView({ report, sokosumiUrl }: { report: Report; sokosumiUrl: stri
       {report.agent && (
         <div className="agent-card">
           <div className="agent-top">
-            <span className="agent-badge">Registered AI agent</span>
+            <span className="agent-badge">Registration found</span>
             <b>{report.agent.name}</b>
           </div>
           <dl>
@@ -181,7 +186,20 @@ function ReportView({ report, sokosumiUrl }: { report: Report; sokosumiUrl: stri
               </div>
             )}
           </dl>
-          <p>Its identity and what it sells are recorded on Cardano through Masumi, not just claimed on a website.</p>
+          <p>Masumi records the operator’s identity and service claims on Cardano. Registration does not certify safety.</p>
+        </div>
+      )}
+
+      {report.assessment && (
+        <div className="report-block">
+          <h4>Before you pay</h4>
+          <p className="muted small">Experimental history warning index. Fraud-detection accuracy has not been established.</p>
+          <p>{report.assessment.nextStep}</p>
+          <details>
+            <summary>What this check can establish</summary>
+            <ul>{report.assessment.limitations.map(limit => <li key={limit}>{limit}</li>)}</ul>
+            <p>{report.assessment.sampledTransactions} recent transactions and {report.assessment.counterpartiesChecked} co-occurring addresses examined.</p>
+          </details>
         </div>
       )}
 
@@ -218,7 +236,7 @@ function ReportView({ report, sokosumiUrl }: { report: Report; sokosumiUrl: stri
 
       {report.counterpartyRisk.length > 0 && (
         <div className="report-block who">
-          <h4>Who it deals with</h4>
+          <h4>Addresses seen in the same transactions</h4>
           <ul>
             {report.counterpartyRisk.map((c) => (
               <li key={c.address}>
@@ -235,10 +253,10 @@ function ReportView({ report, sokosumiUrl }: { report: Report; sokosumiUrl: stri
 
       <div className={`crosscheck ${cc.matches === true ? "ok" : cc.matches === false ? "bad" : ""}`}>
         {cc.matches === true
-          ? "Verified against a second data source ✓"
+          ? "ADA balance matches a second source ✓ — this does not verify payment safety"
           : cc.matches === false
             ? "Two data sources disagree on the balance — treat these figures with care"
-            : "A second data source was unreachable, so the balance is unconfirmed"}
+            : "A second source did not provide a usable balance, so it is unconfirmed"}
       </div>
 
       <details className="report-method">

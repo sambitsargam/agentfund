@@ -1664,3 +1664,34 @@ a {
 .report-block.who {
   border-left-color: var(--violet);
 }
+
+/* Compact Task repayment summary; full evidence stays in the disclosure. */
+.task-repayments { margin-bottom: 16px; }
+.repayment-card { padding: 14px 18px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); }
+.repayment-card + .repayment-card { margin-top: 10px; }
+.repayment-heading { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.repayment-heading > span { color: var(--text-2); font-size: 11px; }
+.repayment-trail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 0; margin: 12px 0; list-style: none; }
+.repayment-trail li { border-left: 2px solid var(--line-2); padding-left: 10px; font-size: 12px; min-width: 0; }
+.repayment-trail li.verified { border-color: var(--teal); }
+.repayment-trail b { display: block; margin-bottom: 4px; font-size: 12px; }
+.repayment-trail span, .repayment-trail a { display: block; line-height: 1.6; overflow-wrap: anywhere; }
+.repayment-trail span, .repayment-foot, .repayment-card details { color: var(--text-2); }
+.repayment-trail a { color: var(--teal); font-size: 11px; }
+.repayment-foot { font-size: 11px; }
+.repayment-card details { margin-top: 8px; font-size: 12px; line-height: 1.6; }
+.repayment-card details summary { cursor: pointer; }
+.repayment-card details p { overflow-wrap: anywhere; }
+@media (max-width: 720px) { .repayment-trail { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .repayment-card { padding: 14px; } }
+#tasks { scroll-margin-top: 88px; }
+
+.payment-history { border-top: 1px solid var(--line-2); }
+.payment-history > summary { padding: 14px 18px; color: var(--teal); font-size: 13px; cursor: pointer; }
+#payments { scroll-margin-top: 88px; }
+
+.funding-journey { margin-top: 12px; border-top: 1px solid var(--line-2); padding-top: 12px; font-size: 12px; color: var(--text-2); line-height: 1.65; }
+.funding-journey summary { cursor: pointer; color: var(--teal); }
+.funding-journey ol { padding-left: 18px; }
+.funding-journey li { margin-bottom: 8px; }
+.funding-journey a { color: var(--teal); }
+.funding-journey p { overflow-wrap: anywhere; }
