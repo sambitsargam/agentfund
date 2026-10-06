@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+import { repositoryRoot } from "./repository.js";
 import { Address, Assets, Data, InlineDatum, KeyHash, PlutusV3, ScriptHash, TransactionHash, UPLC, type UTxO } from "@evolution-sdk/evolution";
 import { scriptHashOf, unwrapCborBytes } from "./splitter.js";
 
@@ -10,7 +11,7 @@ interface RoundOpen { investor: string; earned: string; paid: string }
 /** One member per stage, so narrowing on `stage` reaches the funded fields. */
 export type RoundState = { stage: "offered" } | { stage: "cancelled" } | ({ stage: "active" } & RoundOpen) | ({ stage: "closed" } & RoundOpen);
 export const ROUND_MARKER = "526f756e64";
-const blueprintPath = fileURLToPath(new URL("../../../contracts/cardano/plutus.json", import.meta.url));
+const blueprintPath = resolve(repositoryRoot(), "contracts/cardano/plutus.json");
 const byte = (b: Uint8Array) => Buffer.from(b).toString("hex");
 function credentialData(c: Address.Address["paymentCredential"]) { return Data.constr(c._tag === "KeyHash" ? 0n : 1n, [Data.bytearray(byte(c.hash))]); }
 export function addressData(raw: string): Data.Data {
@@ -50,7 +51,7 @@ export function buildRound(c: RoundConfig): RoundScript {
   const hash = scriptHashOf(code);
   return { code, hash, address: Address.toBech32(new Address.Address({ networkId: 0, paymentCredential: ScriptHash.fromHex(hash) })) };
 }
-export interface RoundClient { getUtxos(a: Address.Address): Promise<UTxO.UTxO[]>; newTx(): any }
+export interface RoundClient { address?(): Promise<Address.Address>; getUtxos(a: Address.Address): Promise<UTxO.UTxO[]>; newTx(): any }
 export async function readRound(client: RoundClient, config: RoundConfig) {
   const script = buildRound(config);
   const coins = await client.getUtxos(Address.fromBech32(script.address));
@@ -63,7 +64,7 @@ export async function readRound(client: RoundClient, config: RoundConfig) {
   return { script, state, stateCoin, receipts };
 }
 function asset(t: RoundTerms, n: bigint) { return Assets.addByHex(Assets.zero, t.policy, t.name, n); }
-function attached(client: RoundClient, s: RoundScript) { return client.newTx().attachScript({ script: new PlutusV3.PlutusV3({ bytes: Buffer.from(s.code, "hex") }) }); }
+function attached(client: RoundClient, s: RoundScript) { return client.newTx().setValidity({ to: BigInt(Date.now() + 600_000) }).attachScript({ script: new PlutusV3.PlutusV3({ bytes: Buffer.from(s.code, "hex") }) }); }
 function signer(tx: any, raw: string) { const a = Address.fromBech32(raw); if (a.networkId !== 0 || a.paymentCredential._tag !== "KeyHash") throw new Error("Preprod key wallet required"); return tx.addSigner({ keyHash: a.paymentCredential }); }
 export async function prepareRoundOpen(client: RoundClient, config: RoundConfig) {
   const s = buildRound(config), t = config.terms;
@@ -99,5 +100,15 @@ export async function prepareRoundDistribute(client: RoundClient, config: RoundC
     .payToAddress({ address: stateCoin.address, assets: stateCoin.assets, datum: new InlineDatum.InlineDatum({ data: stateData(plan.state) }) });
   if (plan.investor > 0n && "investor" in state) tx = tx.payToAddress({ address: Address.fromBech32(state.investor), assets: asset(t, plan.investor) });
   if (plan.operator > 0n) tx = tx.payToAddress({ address: Address.fromBech32(t.operator), assets: asset(t, plan.operator) });
+  if (client.address) tx = signer(tx, Address.toBech32(await client.address()));
   return { built: await tx.build({ autoMinUtxo: true }), plan };
+}
+
+export async function prepareRoundCancel(client: RoundClient, config: RoundConfig) {
+  const { script, state, stateCoin } = await readRound(client, config);
+  if (!stateCoin || state?.stage !== "offered") throw new Error("Only an unfunded round can be cancelled");
+  return signer(attached(client, script)
+    .collectFrom({ inputs: [stateCoin], redeemer: Data.constr(2n, []) })
+    .payToAddress({ address: stateCoin.address, assets: stateCoin.assets, datum: new InlineDatum.InlineDatum({ data: stateData({ stage: "cancelled" }) }) }), config.terms.operator)
+    .build({ autoMinUtxo: true });
 }

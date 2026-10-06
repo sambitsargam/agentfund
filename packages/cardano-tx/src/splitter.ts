@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { repositoryRoot } from "./repository.js";
+import { resolve } from "node:path";
 import { Address, Data, PlutusV3, ScriptHash, UPLC } from "@evolution-sdk/evolution";
 import { TUSDM_ASSET_NAME, TUSDM_MASUMI_POLICY, TUSDM_X402_POLICY, type DealTerms } from "@agentfund/shared";
 
-const BLUEPRINT = fileURLToPath(new URL("../../../contracts/cardano/plutus.json", import.meta.url));
+const BLUEPRINT = resolve(repositoryRoot(), "contracts/cardano/plutus.json");
 const MAX_BPS = 10_000;
 
 export const SPLIT_UNITS = [
