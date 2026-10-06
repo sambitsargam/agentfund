@@ -88,6 +88,35 @@ describe("unpaid task flow", () => {
 });
 
 describe("restart safety", () => {
+  it("does not create another payment when a paid RUNNING Task has lost its state", async () => {
+    const posted: unknown[] = [];
+    const store = new TaskStore<TaskState>(mkdtempSync(join(tmpdir(), "coworker-")));
+    const worker = new CoworkerWorker({
+      core: { post: async (path: string) => { posted.push(path); return { id: "evt" }; } } as never,
+      mps: { post: async (path: string) => { posted.push(path); return terms(); } } as never,
+      registration: reg, store, blockfrostProjectId: "test", log: () => {},
+    });
+    const id = "01a11029-b431-74cd-945c-fac56d1fe53f";
+    await worker.advance({ id, status: "RUNNING", name: "check", description: "is this safe?" });
+    expect(posted).toEqual([]);
+    expect(store.read(id)).toMatchObject({ stage: "failed", error: expect.stringContaining("local state is missing") });
+  });
+
+  it.each(["terms-pending", "payment-pending", "submit-pending", "complete-pending"] as const)("does not repeat an interrupted %s write", async (stage) => {
+    const posted: unknown[] = [];
+    const store = new TaskStore<TaskState>(mkdtempSync(join(tmpdir(), "coworker-")));
+    const id = "01a11029-b431-74cd-945c-fac56d1fe53f";
+    store.write(id, { taskId: id, input: "check", stage, paid: true, startedAt: "2026-10-06T00:00:00Z" });
+    const worker = new CoworkerWorker({
+      core: { post: async (path: string) => { posted.push(path); } } as never,
+      mps: { post: async (path: string) => { posted.push(path); } } as never,
+      registration: reg, store, blockfrostProjectId: "test", log: () => {},
+    });
+    await worker.advance({ id, status: "RUNNING", name: "check", description: "check" });
+    expect(posted).toEqual([]);
+    expect(store.read(id)?.stage).toBe("failed");
+  });
+
   it("adopts a RUNNING task whose local state was lost, without re-posting RUNNING", async () => {
     const posted: unknown[] = [];
     const core = {
@@ -114,6 +143,15 @@ describe("restart safety", () => {
 });
 
 describe("escrow deadlines", () => {
+  it("stops waiting for an unfunded payment after its signed deadline", async () => {
+    const store = new TaskStore<TaskState>(mkdtempSync(join(tmpdir(), "coworker-")));
+    const id = "01a11029-b431-74cd-945c-fac56d1fe53f";
+    store.write(id, { taskId: id, input: "check", stage: "awaiting-escrow", paid: true, startedAt: "2026-10-06T00:00:00Z", terms: terms({ payByTime: "100" }) });
+    const worker = new CoworkerWorker({ core: {} as never, mps: { post: async () => terms({ onChainState: null }) } as never, registration: reg, store, blockfrostProjectId: "test", log: () => {}, now: () => 101 });
+    await worker.advance({ id, status: "RUNNING", name: "check", description: "check" });
+    expect(store.read(id)).toMatchObject({ stage: "failed", error: expect.stringContaining("did not fund escrow") });
+  });
+
   it("accepts the defaults", () => {
     expect(() => checkDeadlines()).not.toThrow();
   });

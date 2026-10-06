@@ -25,7 +25,7 @@ const facilitatorFetch = async (url: string) => {
   return new Response("{}", { status: 500 });
 };
 
-function app() {
+function app(options: { sampleSubject?: string } = {}) {
   const realFetch = globalThis.fetch;
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -38,6 +38,7 @@ function app() {
     publicUrl: "https://atlas.test",
     chain: () => new ChainClient({ blockfrostProjectId: "test", fetch: async () => new Response("{}", { status: 404 }) }),
     now: () => new Date("2026-10-06T04:00:00Z"),
+    ...options,
   });
 }
 
@@ -56,6 +57,20 @@ describe("receipt", () => {
 });
 
 describe("atlas http", () => {
+  it("rebuilds a real sample after startup before any paid request", async () => {
+    const seller = app({ sampleSubject: ADDR });
+    const first = await request(seller).get("/sample");
+    expect(first.status).toBe(200);
+    expect(first.body.subject.address).toBe(ADDR);
+    expect(first.body.sources.length).toBeGreaterThan(0);
+    const again = await request(seller).get("/sample");
+    expect(again.body).toEqual(first.body);
+  });
+
+  it("rejects odd-length probe hex instead of silently truncating it", async () => {
+    expect((await request(app()).get("/probe?challenge=abc")).status).toBe(400);
+  });
+
   it("answers the probe deterministically", async () => {
     const res = await request(app()).get("/probe?challenge=00ff");
     expect(res.status).toBe(200);

@@ -23,6 +23,7 @@ export interface AtlasDeps {
   facilitatorUrl: string;
   blockfrostProjectId: string;
   publicUrl: string;
+  sampleSubject?: string;
   /** Overridable for tests. */
   resourceServer?: x402ResourceServer;
   chain?: () => ChainClient;
@@ -42,6 +43,7 @@ export function createApp(deps: AtlasDeps) {
   // A paid request served twice (client retry after settlement) returns the same report.
   const served = new Map<string, Report>();
   let latest: Report | undefined;
+  let samplePending: Promise<Report> | undefined;
 
   const app = express();
   app.disable("x-powered-by");
@@ -53,19 +55,30 @@ export function createApp(deps: AtlasDeps) {
   // Deterministic liveness check for the CRE rating workflow: every node sends the same challenge.
   app.get("/probe", (req, res) => {
     const challenge = String(req.query.challenge ?? "");
-    if (!/^[0-9a-f]{2,128}$/i.test(challenge)) {
+    if (!/^(?:[0-9a-f]{2}){1,64}$/i.test(challenge)) {
       res.status(400).json({ error: "challenge must be 1-64 bytes of hex" });
       return;
     }
     res.json({ challenge, answer: createHash("sha256").update(Buffer.from(challenge, "hex")).digest("hex") });
   });
 
-  app.get("/sample", (_req, res) => {
-    if (!latest) {
+  app.get("/sample", async (_req, res) => {
+    if (!latest && !deps.sampleSubject) {
       res.status(404).json({ error: "no report has been produced yet" });
       return;
     }
-    res.json(latest);
+    try {
+      // A restarted seller still needs real work for the gate to assess before its first purchase.
+      if (!latest) {
+        samplePending ??= buildReport(deps.sampleSubject!, { chain: newChain(), now: Math.floor(now().getTime() / 1000) });
+        latest = await samplePending;
+      }
+      res.json(latest);
+    } catch {
+      res.status(503).json({ error: "sample report data is unavailable; retry shortly" });
+    } finally {
+      samplePending = undefined;
+    }
   });
 
   app.get("/.well-known/x402.json", (_req, res) => {

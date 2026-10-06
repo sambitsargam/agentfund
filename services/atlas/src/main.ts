@@ -19,6 +19,7 @@ const app = createApp({
   facilitatorUrl: required("FACILITATOR_URL"),
   blockfrostProjectId: required("BLOCKFROST_PROJECT_ID"),
   publicUrl: (process.env.ATLAS_PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, ""),
+  sampleSubject: process.env.ATLAS_SAMPLE_SUBJECT ?? ATLAS_DEAL.atlasAddress,
 });
 
 app.listen(port, () => {

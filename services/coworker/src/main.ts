@@ -5,6 +5,7 @@ import express from "express";
 import { CoreClient, MpsClient } from "./clients.js";
 import { TaskStore } from "./store.js";
 import { CoworkerWorker, type Registration, type TaskState } from "./worker.js";
+import { summarizeReliability } from "./reliability.js";
 
 config({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
 config({ path: fileURLToPath(new URL("../.env.local", import.meta.url)) });
@@ -33,6 +34,7 @@ const worker = new CoworkerWorker({
 });
 
 const app = express();
+app.get("/reliability", (_req, res) => res.json(summarizeReliability(store.all().map(t => t.state))));
 app.get("/health", (_req, res) => {
   const stale = !worker.lastPollAt || Date.now() - Date.parse(worker.lastPollAt) > 60_000;
   res.status(stale ? 503 : 200).json({ ok: !stale, lastPollAt: worker.lastPollAt, paidTasks: worker.paidEnabled });
@@ -72,6 +74,7 @@ app.get("/tasks", (_req, res) => {
         resultHash: s.resultHash ?? null,
         collectionTx: s.settlement?.txHash ?? null,
         collectedAtomicUnits: s.settlement?.netAtomicUnits ?? null,
+        collectionAddress: registration?.payoutAddress ?? null,
         error: s.error ?? null,
       }))
       .sort((a, b) => b.startedAt.localeCompare(a.startedAt)),

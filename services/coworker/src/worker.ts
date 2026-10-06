@@ -156,6 +156,8 @@ export interface WorkerDeps {
   blockfrostProjectId: string;
   log: (msg: string) => void;
   now?: () => number;
+  /** Injectable report producer for failure/restart testing; production uses Atlas's real report. */
+  answer?: typeof answer;
 }
 
 export class CoworkerWorker {
@@ -189,8 +191,8 @@ export class CoworkerWorker {
   async advance(task: CoreTask): Promise<void> {
     let state = this.deps.store.read(task.id);
     if (!state) {
-      // READY: ours to start. RUNNING with no state: we started it and lost the file, so adopt it
-      // rather than leaving the Task stranded. Anything else is not ours to touch.
+      // A paid RUNNING Task without local state may already have signed terms or funded escrow.
+      // Inspect it before creating another purchase. Unpaid Tasks can be resumed safely.
       if (task.status !== "READY" && task.status !== "RUNNING") return;
       state = this.save({
         taskId: task.id,
@@ -199,6 +201,10 @@ export class CoworkerWorker {
         paid: this.paidEnabled,
         startedAt: new Date(this.now()).toISOString(),
       });
+      if (task.status === "RUNNING" && state.paid) {
+        this.fail(state, "local state is missing for a paid RUNNING Task; inspect existing payment events before resuming");
+        return;
+      }
       if (task.status === "READY") {
         await this.deps.core.post(`/v1/tasks/${task.id}/events`, { status: "RUNNING" });
         this.deps.log(`task ${task.id}: started (${state.paid ? "paid" : "unpaid"})`);
@@ -224,7 +230,7 @@ export class CoworkerWorker {
           return this.save({ ...s, paid: false, stage: "result-saved", result: prepared.markdown, resultHash: sha256(prepared.markdown), delivered: false });
         }
         if (!s.paid) {
-          const a = await answer(prepared.subject, this.deps.blockfrostProjectId);
+          const a = await (this.deps.answer ?? answer)(prepared.subject, this.deps.blockfrostProjectId);
           return this.save({ ...s, stage: "result-saved", result: a.markdown, resultHash: sha256(a.markdown), delivered: a.delivered });
         }
         checkDeadlines();
@@ -270,7 +276,7 @@ export class CoworkerWorker {
         }
         if (this.now() >= Number(s.terms!.submitResultTime)) return this.fail(s, "result deadline passed before escrow confirmed");
         const prepared = prepare(s.input);
-        const a = prepared.ok ? await answer(prepared.subject, this.deps.blockfrostProjectId) : { markdown: prepared.markdown, delivered: false };
+        const a = prepared.ok ? await (this.deps.answer ?? answer)(prepared.subject, this.deps.blockfrostProjectId) : { markdown: prepared.markdown, delivered: false };
         return this.save({ ...s, stage: "result-saved", onChainState: "FundsLocked", result: a.markdown, resultHash: sha256(a.markdown), delivered: a.delivered });
       }
       case "result-saved": {
@@ -348,10 +354,12 @@ export class CoworkerWorker {
 interface Io {
   address: string;
   amount: { unit: string; quantity: string }[];
+  collateral?: boolean;
+  reference?: boolean;
 }
 
 export function netReceived(utxos: { inputs: Io[]; outputs: Io[] }, address: string, unit: string): bigint {
   const sum = (ios: Io[]) =>
-    ios.filter((x) => x.address === address).reduce((t, x) => t + x.amount.filter((a) => a.unit === unit).reduce((n, a) => n + BigInt(a.quantity), 0n), 0n);
+    ios.filter((x) => x.address === address && !x.collateral && !x.reference).reduce((t, x) => t + x.amount.filter((a) => a.unit === unit).reduce((n, a) => n + BigInt(a.quantity), 0n), 0n);
   return sum(utxos.outputs) - sum(utxos.inputs);
 }

@@ -1,7 +1,7 @@
 /**
  * Registers Atlas in the Masumi registry under the funded selling wallet, with the
- * `X402` access model so one identity covers both ways Atlas gets paid: Masumi escrow
- * for Sokosumi Tasks, and x402 for agent-to-agent reports.
+ * Standard access model for Sokosumi paid Tasks. x402 reports use their own
+ * payment offer and do not require X402 registry registration.
  *
  *   npm run register -w @agentfund/coworker          # register (idempotent)
  *   npm run register -w @agentfund/coworker -- check # poll until confirmed
