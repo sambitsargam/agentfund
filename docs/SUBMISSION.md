@@ -135,11 +135,12 @@ Terms: **0.20 tUSDM** of capital for **50%** of this agent's x402 earnings, repa
 
 Two things make this more than a demonstration of arithmetic.
 
-**The revenue is a real customer payment.** Steps 3 and 5 were paid by a buyer agent's own
-wallet (`addr_test1qpqw23u…`) against Atlas's x402 offer for `/rounds/<id>/report`, each
-carrying its receipt as an inline datum. The money went from the customer into the round's
-address directly — it never passed through Atlas's wallet, so there is no step at which the
-operator could have declined to forward it.
+**The revenue arrived as a real x402 purchase, from a wallet the operator does not control.**
+Steps 3 and 5 were paid by our buyer agent (`addr_test1qpqw23u…`) against Atlas's x402 offer for
+`/rounds/<id>/report`, each carrying its receipt as an inline datum. The money went straight into
+the round's address — it never passed through Atlas's wallet, so there was no step at which the
+operator could have declined to forward it. That buyer agent is **ours**, so this demonstrates
+the mechanism, not outside demand; we make the same distinction on the dashboard.
 
 **The cap is enforced, not calculated.** Step 4 pays the investor a full 50% share, 0.25. Step
 6 pays only **0.05**, because that is all that remained under the 0.30 cap, and the round
