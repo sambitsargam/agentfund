@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import express from "express";
@@ -16,11 +16,23 @@ function required(name: string): string {
   return value;
 }
 
-const dataDir = process.env.COWORKER_DATA_DIR ?? fileURLToPath(new URL("../data", import.meta.url));
+const dataDir =
+  process.env.COWORKER_DATA_DIR ??
+  fileURLToPath(new URL("../data", import.meta.url));
 const registrationFile = `${dataDir}/registration.json`;
-const registration = existsSync(registrationFile)
-  ? (JSON.parse(readFileSync(registrationFile, "utf8")) as Registration)
-  : undefined;
+// A hosted worker starts with an empty volume, so the confirmed registration can also be
+// supplied as configuration. The file still wins, because `register` keeps it current.
+function loadRegistration(): Registration | undefined {
+  if (existsSync(registrationFile))
+    return JSON.parse(readFileSync(registrationFile, "utf8")) as Registration;
+  const configured = process.env.MASUMI_REGISTRATION;
+  if (!configured) return undefined;
+  const parsed = JSON.parse(configured) as Registration;
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(registrationFile, JSON.stringify(parsed, null, 2) + "\n");
+  return parsed;
+}
+const registration = loadRegistration();
 const mpsToken = process.env.MPS_RUNTIME_TOKEN;
 
 const store = new TaskStore<TaskState>(`${dataDir}/tasks`);
@@ -34,19 +46,37 @@ const worker = new CoworkerWorker({
 });
 
 const app = express();
-app.get("/reliability", (_req, res) => res.json(summarizeReliability(store.all().map(t => t.state))));
+app.get("/reliability", (_req, res) =>
+  res.json(summarizeReliability(store.all().map((t) => t.state))),
+);
 app.get("/health", (_req, res) => {
-  const stale = !worker.lastPollAt || Date.now() - Date.parse(worker.lastPollAt) > 60_000;
-  res.status(stale ? 503 : 200).json({ ok: !stale, lastPollAt: worker.lastPollAt, paidTasks: worker.paidEnabled });
+  const stale =
+    !worker.lastPollAt || Date.now() - Date.parse(worker.lastPollAt) > 60_000;
+  res
+    .status(stale ? 503 : 200)
+    .json({
+      ok: !stale,
+      lastPollAt: worker.lastPollAt,
+      paidTasks: worker.paidEnabled,
+    });
 });
 // Public identity, so the dashboard can show where Atlas is registered.
 app.get("/agent", (_req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  const reg = existsSync(registrationFile) ? (JSON.parse(readFileSync(registrationFile, "utf8")) as Record<string, unknown>) : undefined;
+  const reg = existsSync(registrationFile)
+    ? (JSON.parse(readFileSync(registrationFile, "utf8")) as Record<
+        string,
+        unknown
+      >)
+    : undefined;
   res.json({
     coworkerId: process.env.SOKOSUMI_COWORKER_ID ?? null,
     masumi: reg
-      ? { state: reg.state ?? null, agentIdentifier: reg.agentIdentifier ?? null, x402ResourcesUrl: reg.x402ResourcesUrl ?? null }
+      ? {
+          state: reg.state ?? null,
+          agentIdentifier: reg.agentIdentifier ?? null,
+          x402ResourcesUrl: reg.x402ResourcesUrl ?? null,
+        }
       : null,
     paidTasks: worker.paidEnabled,
   });
@@ -82,12 +112,17 @@ app.get("/tasks", (_req, res) => {
 });
 app.listen(Number(process.env.PORT ?? process.env.COWORKER_PORT ?? 4030));
 
-console.log(`atlas coworker worker started; paid Tasks ${worker.paidEnabled ? "enabled" : "disabled (no Masumi registration yet)"}`);
+console.log(
+  `atlas coworker worker started; paid Tasks ${worker.paidEnabled ? "enabled" : "disabled (no Masumi registration yet)"}`,
+);
 for (;;) {
   try {
     await worker.poll();
   } catch (err) {
-    console.error(new Date().toISOString(), `poll failed: ${(err as Error).message}`);
+    console.error(
+      new Date().toISOString(),
+      `poll failed: ${(err as Error).message}`,
+    );
   }
   await new Promise((r) => setTimeout(r, 5_000));
 }
