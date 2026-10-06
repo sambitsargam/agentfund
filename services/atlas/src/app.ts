@@ -19,7 +19,7 @@ import { receiptDatum, requestIdFor } from "./receipt.js";
 export const REPORT_PRICE = "500000"; // 0.50 tUSDM (6 decimals)
 
 export interface AtlasDeps {
-  splitter: SplitterScript;
+  splitter: Pick<SplitterScript, "code" | "hash" | "address">;
   facilitatorUrl: string;
   blockfrostProjectId: string;
   publicUrl: string;
