@@ -10,7 +10,7 @@ So revenue-share financing for agents barely exists, which is a shame, because a
 
 ## The approach
 
-AgentFund makes repayment a property of the payment rather than a promise about it. **The agent is never paid directly.** Its advertised payment address is a contract that can only release money by paying each investor their share.
+AgentFund makes repayment a property of the payment rather than a promise about it. **x402 payments bypass the agent wallet. Masumi escrow earnings require a selling-wallet sweep.** Its advertised payment address is a contract that can only release money by paying each investor their share.
 
 ### The splitter
 
@@ -29,13 +29,13 @@ The EUTXO model is what makes the batching work. Because the validator sees ever
 
 ### Getting paid: two routes, one contract
 
-**x402** (agent to agent). Atlas's paid route answers 402 with the `script` transfer method: `payTo` is the splitter address, `extra.script` is the compiled validator, `extra.parameters` carries the deal, and `extra.datum` is a receipt holding the request id. The facilitator independently re-derives the script address from those parameters and refuses the payment if it does not match `payTo` — so the buyer does not have to trust Atlas's claim about where the money is going. Settlement uses `confirmationPolicy: { l1Confirmations: 0 }`; we found the hosted facilitator's gateway times out at 60 s while waiting for a block, which caused a buyer to pay and receive nothing.
+**x402** (agent to agent). Atlas's paid route answers 402 with the `script` transfer method: `payTo` is the splitter address, `extra.script` is the compiled validator with the deal parameters already applied, and `extra.datum` is a receipt holding the request id. The facilitator independently re-derives the script address from that pre-applied script and refuses the payment if it does not match `payTo` — so the buyer does not have to trust Atlas's claim about where the money is going. Settlement uses `confirmationPolicy: { l1Confirmations: 0 }`; we found the hosted facilitator's gateway times out at 60 s while waiting for a block, which caused a buyer to pay and receive nothing.
 
-**Masumi escrow** (human to agent). Atlas is a Sokosumi Coworker. A paid Task requests signed seller terms from our Masumi payment service, posts the `masumiPayment` event, waits for escrow to be funded on-chain, delivers the report, submits its hash, and collects after the dispute window.
+**Masumi escrow** (human to agent). Atlas is a Sokosumi Coworker. A paid Task requests signed seller terms from our Masumi payment service, posts the `masumiPayment` event, waits for escrow to be funded on-chain, delivers the report, submits its hash, and collects after the dispute window. Masumi requires a key return address, so collection lands in the operator-controlled selling wallet before the keeper sweeps it into the splitter. Repayment is enforced after that sweep, not before.
 
 ### Deciding whether a payment should happen at all
 
-An investor contract is only as good as the agent's willingness to advertise it. A compromised or dishonest agent can quote its own wallet instead. So before a buyer agent pays, a Chainlink CRE confidential workflow checks the offer: that `payTo` is the splitter address bound to this agent, that the script in the offer hashes to the deployed validator, that the asset and amount are within policy, that Atlas's on-chain rating is good and fresh, and that two independent LLM auditors — whose keys and prompts stay inside the enclave — judge the offer and a sample of Atlas's work. A wrong destination or script is an immediate Deny; anything unresolved is Review; Allow requires everything to pass. The verdict is written to Base Sepolia, and the buyer pays only on Allow, insisting that the 402 it finally pays matches the offer that was approved.
+An investor contract is only as good as the agent's willingness to advertise it. A compromised or dishonest agent can quote its own wallet instead. So before a buyer agent pays, a Chainlink CRE confidential workflow checks the offer: that `payTo` is the splitter address bound to this agent, that the script in the offer hashes to the deployed validator, that the asset and amount are within policy, that Atlas's on-chain rating is good and fresh, and that two independent LLM auditors — whose handler is configured for a TEE — judge the offer and a sample of Atlas's work. A wrong destination or script is an immediate Deny; anything unresolved is Review; Allow requires everything to pass. The current CLI simulation writes real testnet transactions but does not establish enclave confidentiality or DON consensus. The verdict is written to Base Sepolia, and the buyer pays only on Allow, insisting that the 402 it finally pays matches the offer that was approved.
 
 ## Cardano infrastructure used
 
@@ -53,11 +53,11 @@ Yes, end to end on preprod, and the dashboard shows it live. A customer agent as
 
 ## How it scales
 
-**Cost per payment.** Settlement is one script execution over a batch. Measured on preprod: 0.27 tADA to settle two payments, with the full check costing 1.7% of the per-transaction memory budget and each additional input about 0.2%. A batch of eight is safely inside the limit, so the marginal on-chain cost of a payment is roughly 0.03 tADA. The keeper batches on a schedule, so settlement cost is amortised rather than per-payment.
+**Cost per payment.** Settlement is one script execution over a batch. Measured on preprod: 0.27 tADA to settle two payments, with the full check costing 1.7% of the per-transaction memory budget and each additional input about 0.2%. A batch of eight is safely inside the limit, so the marginal on-chain cost of a payment is roughly 0.03 tADA. The keeper supports manual batches; scheduling remains part of hosting. Batching, so settlement cost is amortised rather than per-payment.
 
-**Throughput.** Atlas's own work is the bottleneck, not the chain: a report takes about 3 seconds and 11–14 Blockfrost calls. Payment confirmation is 20–60 seconds, which is why the buyer agent fans its wallet out into separate coins — one wallet cannot sign two payments against the same UTxO within a block.
+**Throughput.** Atlas's own work is the bottleneck, not the chain: a report takes about 3 seconds and a variable number of public-data requests, including agent identity and counterparty checks. Payment confirmation is 20–60 seconds, which is why the buyer agent fans its wallet out into separate coins — one wallet cannot sign two payments against the same UTxO within a block.
 
-**More investors.** The current validator holds the investor set as a script parameter, which is right for a fixed round but means a new investor creates a new address. The natural next step is a cap-table reference input, or revenue-share receipt tokens minted to investors at funding time so shares are transferable and the validator pays whoever holds the token. The validator's check is already per-investor, so this is a datum change, not a redesign.
+**More investors.** The current validator holds the investor set as a script parameter, which is right for a fixed round but means a new investor creates a new address. The natural next step is a cap-table reference input, or revenue-share receipt tokens minted to investors at funding time so shares are transferable and the validator pays whoever holds the token. The validator's check is already per-investor, so this requires a new validator design and migration; the current validator ignores the datum.
 
 **Beyond one agent.** Nothing in the splitter is specific to Atlas. Any agent with a payment address can be funded this way, and the rating workflow already keys everything by agent id, so one registry serves many agents. The piece that generalises least is the gate's policy, which is deliberately conservative.
 

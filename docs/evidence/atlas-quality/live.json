@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-10-06T10:02:40.742Z",
+  "scope": "Three known-role preprod addresses; checks role identification and records source agreement, not fraud prediction.",
+  "results": [
+    {
+      "id": "registered-agent",
+      "expected": {
+        "registered": true,
+        "script": false
+      },
+      "passed": true,
+      "observed": {
+        "registered": true,
+        "script": false,
+        "verdict": "medium",
+        "risk": 35,
+        "balanceStatus": "matched",
+        "queries": 23
+      }
+    },
+    {
+      "id": "masumi-escrow",
+      "expected": {
+        "registered": false,
+        "script": true
+      },
+      "passed": true,
+      "observed": {
+        "registered": false,
+        "script": true,
+        "verdict": "low",
+        "risk": 15,
+        "balanceStatus": "matched",
+        "queries": 21
+      }
+    },
+    {
+      "id": "test-investor",
+      "expected": {
+        "registered": false,
+        "script": false
+      },
+      "passed": true,
+      "observed": {
+        "registered": false,
+        "script": false,
+        "verdict": "medium",
+        "risk": 35,
+        "balanceStatus": "matched",
+        "queries": 17
+      }
+    }
+  ]
+}

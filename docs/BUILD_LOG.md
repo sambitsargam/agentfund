@@ -129,3 +129,32 @@ Running all four dashboard actions in sequence caught two bugs that would have b
 2. **The report-quality auditor graded the wrong thing.** It kept judging the *wallet* the report describes ("the wallet is very new… concerns") rather than Atlas's work, which produced `auditorUnsure` (flag 256). Rewrote the prompt to state explicitly what is and is not being assessed, and moved that auditor to `gpt-4.1-mini`; it now answers allow/95 with sound reasoning.
 
 Clean run afterwards: ALLOW [`0x96fd274c…`](https://sepolia.basescan.org/tx/0x96fd274cb92eb54242eaa8eb4c5c7dc4b0fd4b8ad760cb1d709e46846be44047) → payment [`399d922c…`](https://preprod.cardanoscan.io/transaction/399d922caba6d10b927ee618b33687bbbf3aedd8f904710e7604e25ef2c925cb) → split [`c306e9e4…`](https://preprod.cardanoscan.io/transaction/c306e9e47d7d4473cca6a1709914cd641fe7d494eaf9ee8770923223d16657b0) (backer 0.05, Atlas 0.45) → rating 505 [`0xba3e6110…`](https://sepolia.basescan.org/tx/0xba3e611072c0a4ebaa4090136c5c5f4241df215e4d024a193ba2aa145ef4c6b1); tampered payment DENY [`0xc818729f…`](https://sepolia.basescan.org/tx/0xc818729f03403fef9c78b6eb7acdadb5074afc4bc09e1b86b1409d445512be1e).
+
+### 6 October — verification and paid Task repayment complete
+- Verified paid Task `01a11053-0ffc-75dd-bad7-1e6b98910cc8` and collection `216f781ace511d1f4e690ea3633916b03d7289950601a4ff99e4fa6eaf12f34b` against live services and Blockfrost.
+- After the owner configured the selling-wallet mnemonic locally, swept 1 Masumi tUSDM: `100acc1782a1f9f35525db7ef8db5f10acceb07f541292038ef2cb90692b94ac`.
+- Confirmed mixed-asset distribution `a58888e10d7a20ff73dcd33f23902d0994de8fbddfe48df573173a0f088141b5`: investor 0.10 Masumi + 0.05 x402; Atlas 0.90 Masumi + 0.45 x402. Full public outputs and phase checks are in `docs/VERIFICATION.md` and `docs/samples/settlement-verification.json`.
+- Added regression coverage for failed demo outcomes, paginated/net dashboard accounting, paid restart state loss, interrupted writes and expired terms. Added a sample report fallback on restart and selling-wallet address validation before sweep signing.
+- Clean-install verification: 62 workspace tests, workspace types and production dashboard build passed. Also passed 27 Aiken tests, 11 Foundry tests, 12 payment-gate and 5 rating tests and workflow types.
+- Corrected current documentation; older chronological entries above describe earlier attempts, including rejected X402 registration and direct collection. Current registration is Standard; Masumi needs a wallet sweep. Current CRE evidence is simulator execution with real testnet writes, not a deployed DON or proven enclave execution.
+- No commits or pushes. Hosting, deck, embedded video and submission remain the final stage.
+
+### Cardano upgrade 1 — result quality and explainable scope
+- Atlas report version 2 separates registration claims from safety: registration no longer suppresses contract/no-stake warnings. Missing first/last history produces Unknown.
+- Added a “Before you pay” recommendation and data limits to JSON, Sokosumi Markdown and the free dashboard preview. Balance agreement is described as a field check, not a safety endorsement. Stake queries explicitly cover one indexed payment address.
+- Added sixteen manually specified acceptance scenarios and four report-level regressions. Workspace total is now 82 tests; all workspace types passed.
+- Read-only live evaluation passed registered/script role identification for the Atlas selling wallet, Masumi escrow contract and test investor. All three ADA balance cross-checks matched; observed scores were 35, 15 and 35. These are policy/known-role checks, not measured fraud accuracy.
+- Reproducible evaluation and public report snapshots: `docs/RESULT_QUALITY.md`, `docs/evidence/atlas-quality/`. Used the Masumi skill registry-identity reference and bundled Cardano Masumi registry/identity docs.
+- No new transactions, dependency upgrades, deployments, commits or pushes for this upgrade. Public hosting and real-user validation remain open.
+
+### 6 October — Cardano upgrade 2: paid Task repayment timeline
+- Added the read-only Task → collection → direct sweep → investor/Atlas payout timeline with explorer links and Task/payment/completion identifiers.
+- Matches exact spent output references and the Masumi token policy; excludes reference/collateral inputs and wallet change. Unrelated same-amount payments cannot establish repayment. Batch totals are explicitly distinguished from per-Task allocations.
+- Live preview independently reads the known Task path: 1 Masumi tUSDM collected and swept, investor 0.10 and Atlas 0.90 paid. The selling-wallet trust window remains visible.
+- Eight new regression cases bring the workspace total to 90 passing tests. Workspace types and clean production dashboard build passed. Desktop (1280×800) and mobile (390×844) browser checks passed, with no mobile page overflow; screenshots saved in docs/evidence/task-repayment-*.png.
+- Evidence rules and limits: docs/TASK_REPAYMENT.md. Used the Masumi api-debug-recipes reference and bundled Cardano Blockfrost transaction UTxO schema.
+- No new transactions, dependency upgrades, commits or pushes. Existing service processes remain undisturbed; review preview is on port 3100.
+
+## 6 October 2026 — funding, public threat evidence and operations
+
+Added experimental warning labels, six-address public threat diagnostic/provenance lookup, address-bound funded identity, automatic durable keeper controller, closed 2-test-ADA funding verification and subsequent 0.05/0.45 tUSDM payout, and observed live reliability counts plus 100 simulated restart lifecycles. Kept failure counts and custody limitations visible. Clarified the deliberately blocked redirect test and made completed runs dismissible. Evidence and unclosed requirements are recorded in CARDANO_HARDENING.md. No pushes.

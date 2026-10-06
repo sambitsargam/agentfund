@@ -1,0 +1,140 @@
+{
+  "network": "preprod",
+  "txHash": "9d24049c2da62f836f7d385cdd7c377c9be29642188efbc8534a8e8c49d5277e",
+  "confirmedAt": "2026-10-06T10:40:03.000Z",
+  "blockHeight": 5260275,
+  "fundingTxHash": "d9d65fc3153abf6a59ed3f7c108b9f67f12e3ca46c06dff3a063232fb5c74af7",
+  "scope": "Later payout from pre-existing earned revenue; capital itself is not revenue.",
+  "inputs": [
+    {
+      "address": "addr_test1wzyukctzs3agkmx9gt85dp2ftu9622k8926qh7kjhlw3z8s7w0h96",
+      "amount": [
+        {
+          "unit": "lovelace",
+          "quantity": "1258520"
+        },
+        {
+          "unit": "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d",
+          "quantity": "500000"
+        }
+      ],
+      "tx_hash": "8ba507f14549409dc811c7e3f601479645bc3bffa33272604a69e77919f620da",
+      "output_index": 0,
+      "data_hash": "d4122b9c93688721d1123daeb1d9307a762c69b2d64af3bbf6aa558c8df8f992",
+      "inline_datum": "d8799f5820c3c5a70ea0493f3fb91e068317a2d775ccdfc1ae9eeec093c5c53f7a703768caff",
+      "reference_script_hash": null,
+      "collateral": false,
+      "reference": false
+    },
+    {
+      "address": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+      "amount": [
+        {
+          "unit": "lovelace",
+          "quantity": "9946225771"
+        }
+      ],
+      "tx_hash": "a58888e10d7a20ff73dcd33f23902d0994de8fbddfe48df573173a0f088141b5",
+      "output_index": 2,
+      "data_hash": null,
+      "inline_datum": null,
+      "reference_script_hash": null,
+      "collateral": false,
+      "reference": false
+    },
+    {
+      "address": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+      "amount": [
+        {
+          "unit": "lovelace",
+          "quantity": "9946225771"
+        }
+      ],
+      "tx_hash": "a58888e10d7a20ff73dcd33f23902d0994de8fbddfe48df573173a0f088141b5",
+      "output_index": 2,
+      "data_hash": null,
+      "inline_datum": null,
+      "reference_script_hash": null,
+      "collateral": true,
+      "reference": false
+    }
+  ],
+  "outputs": [
+    {
+      "address": "addr_test1qqwdk97gwef6ypkjcd9hhgpls8ela9fdvee2wvaxnkmjqdtj5pvye96gvjtm2jv70mtyqsczypsl8f2d3dgtlcmktk0sv74rjj",
+      "amount": [
+        {
+          "unit": "lovelace",
+          "quantity": "1168010"
+        },
+        {
+          "unit": "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d",
+          "quantity": "50000"
+        }
+      ],
+      "output_index": 0,
+      "data_hash": null,
+      "inline_datum": null,
+      "collateral": false,
+      "reference_script_hash": null,
+      "consumed_by_tx": null
+    },
+    {
+      "address": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+      "amount": [
+        {
+          "unit": "lovelace",
+          "quantity": "1176630"
+        },
+        {
+          "unit": "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d",
+          "quantity": "450000"
+        }
+      ],
+      "output_index": 1,
+      "data_hash": null,
+      "inline_datum": null,
+      "collateral": false,
+      "reference_script_hash": null,
+      "consumed_by_tx": null
+    },
+    {
+      "address": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+      "amount": [
+        {
+          "unit": "lovelace",
+          "quantity": "9944882603"
+        }
+      ],
+      "output_index": 2,
+      "data_hash": null,
+      "inline_datum": null,
+      "collateral": false,
+      "reference_script_hash": null,
+      "consumed_by_tx": null
+    },
+    {
+      "address": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+      "amount": [
+        {
+          "unit": "lovelace",
+          "quantity": "9941225771"
+        }
+      ],
+      "output_index": 3,
+      "data_hash": null,
+      "inline_datum": null,
+      "collateral": true,
+      "reference_script_hash": null,
+      "consumed_by_tx": null
+    }
+  ],
+  "verifiedAt": "2026-10-06T10:52:10.296Z",
+  "verification": {
+    "assetUnit": "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d",
+    "governedAtomicUnits": "500000",
+    "investorNetAtomicUnits": "50000",
+    "atlasNetAtomicUnits": "450000",
+    "afterFunding": true
+  }
+}

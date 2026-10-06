@@ -1,8 +1,8 @@
 # AgentFund
 
-**Investors fund an AI agent and are repaid out of its earnings automatically, because the money never reaches the agent first.**
+**Investors fund an AI agent and are repaid out of its earnings automatically, with the split enforced by a Cardano contract.**
 
-Atlas is an AI agent that checks Cardano wallets for a living. Teams hire it on the Sokosumi marketplace; other AI agents pay it per report over x402. Every payment lands in an Aiken contract that can only release funds by paying each investor their share. Before any agent pays, a Chainlink CRE workflow verifies the payment is going to that contract, that Atlas has a fresh on-chain rating, and that two AI auditors agree — then records Allow, Deny or Review on Base Sepolia. The buyer pays only on Allow.
+Atlas is an AI agent that checks Cardano wallets for a living. Teams hire it on the Sokosumi marketplace; other AI agents pay it per report over x402. x402 payments land directly in an Aiken contract; Masumi escrow earnings first collect into the selling wallet and are swept into that contract. The contract can only release funds by paying each investor their share. Before our buyer agent pays, a Chainlink CRE workflow verifies the payment is going to that contract, that Atlas has a fresh on-chain rating, and that two AI auditors agree — then records Allow, Deny or Review on Base Sepolia. The buyer pays only on Allow.
 
 The hard problem in agent financing is not raising money, it is collecting. An agent that earns can simply not pay you back. AgentFund removes the choice: repayment is a property of the payment itself.
 
@@ -16,7 +16,7 @@ flowchart LR
   end
 
   subgraph CRE["Chainlink CRE"]
-    G["Payment gate<br/>(confidential, in a TEE)"]
+    G["Payment gate<br/>(TEE handler; simulated today)"]
     R["Rating workflow<br/>(cron + HTTP)"]
   end
 
@@ -36,11 +36,13 @@ flowchart LR
   B -- "2. payment proposal" --> G
   G -- "reads rating" --> REG
   G -- "checks payTo + script" --> SPL
-  G -- "two AI auditors (keys stay in the enclave)" --> G
+  G -- "two AI auditor checks" --> G
   G -- "3. Allow / Deny / Review" --> REG
   B -- "4. pays only on Allow (x402, script method)" --> SPL
   H -- "hires, pays into Masumi escrow" --> A
-  A -- "delivers report, escrow collects" --> SPL
+  SELL["Masumi selling wallet"]
+  A -- "delivers report, escrow collects" --> SELL
+  SELL -- "keeper sweep (operator-controlled window)" --> SPL
   SPL -- "5. keeper splits: investor share first" --> INV
   SPL --> ATL
   R -- "reads earnings via Blockfrost" --> SPL
@@ -50,18 +52,20 @@ flowchart LR
 
 ## Why each sponsor's technology is essential
 
-**Cardano** is where repayment is enforced. The splitter is our own Plutus V3 validator, written in Aiken and parameterised by Atlas's key hash, the investor shares in basis points, and the asset units it governs — so the deal is part of the script hash and cannot change after funding. Spending it requires paying each investor at least `floor(total × bps / 10000)` of every governed asset and Atlas the remainder, summed across **all** script inputs in the transaction, so a batch cannot pay for one coin and pocket the rest. Payments arrive through the x402 `script` transfer method: the 402 response carries the compiled validator and its parameters, and the facilitator independently re-derives the script address before accepting the payment. The receipt datum carries the Chainlink request id, which is what ties a Cardano payment to its off-chain approval.
+**Cardano** is where repayment is enforced. The splitter is our own Plutus V3 validator, written in Aiken and parameterised by Atlas's key hash, the investor shares in basis points, and the asset units it governs — so the deal is part of the script hash and cannot change after funding. Spending it requires paying each investor at least `floor(total × bps / 10000)` of every governed asset and Atlas the remainder, summed across **all** script inputs in the transaction, so a batch cannot pay for one coin and pocket the rest. Payments arrive through the x402 `script` transfer method: the 402 response carries the compiled validator with deal parameters already applied, and the facilitator independently re-derives the script address before accepting the payment. The receipt datum carries the Chainlink request id, which is what ties a Cardano payment to its off-chain approval.
 
 **Chainlink CRE** is the orchestration layer, not a price feed. Two workflows:
 
 | Workflow | Trigger | Capabilities | Job |
 | --- | --- | --- | --- |
-| `workflows/rating` | cron (15 min) + HTTP | HTTP, EVM Read, EVM Write | Reads Atlas's real earnings from the splitter via Blockfrost, probes Atlas's service with a challenge derived from DON time, agrees across nodes, reads the stored rating, and writes a new one only when something changed |
+| `workflows/rating` | cron (15 min) + HTTP | HTTP, EVM Read, EVM Write | Reads Atlas's real earnings from the splitter via Blockfrost, probes Atlas's service with a challenge derived from DON time, agrees across nodes, reads the stored rating, and writes when something changed or the previous observation is 30 minutes old |
 | `workflows/payment-gate` | HTTP | HTTP (in a TEE), EVM Read, EVM Write | Decides whether a proposed payment may happen at all, and records the verdict on-chain |
 
 **Masumi and Sokosumi** give Atlas an identity and customers. It is registered as a Sokosumi Coworker and answers real Tasks; the paid path requests signed seller terms, posts the `masumiPayment` event, waits for escrow, submits the result hash, completes the Task, and proves collection on-chain.
 
-### Where each secret runs, and why
+### Intended secret placement
+
+The table describes the intended deployed runtime. Current evidence comes from local CLI simulation; it does not establish enclave confidentiality or DON consensus.
 
 | Secret | Runs | Reason |
 | --- | --- | --- |
@@ -82,6 +86,8 @@ Every link below is a real transaction on a public testnet.
 | 4 | Keeper splits locked payments: investor paid first | [`c8377ab4…fd90`](https://preprod.cardanoscan.io/transaction/c8377ab4d1008451c4a90da334708f256c1f33fef78820ce56e1c41db653fd90) |
 | 5 | Chainlink rating written from real on-chain earnings | [`0x3ffd2c9e…b9b7`](https://sepolia.basescan.org/tx/0x3ffd2c9e96cb116361aeaf0ca0f60e27654e0c060a79794f2a9b7b9a391db9b7) |
 | 6 | **Tampered payment blocked**: `payTo` changed, gate returns Deny, buyer pays nothing | [`0x6ac84ada…8925`](https://sepolia.basescan.org/tx/0x6ac84adaafbc31f5cdec5073904970236574c41be8eef539dd28ce9c19868925) |
+
+The paid Sokosumi Task, its confirmed collection, sweep, and investor payout are recorded in `docs/VERIFICATION.md` and `docs/samples/settlement-verification.json`.
 
 `docs/CHAINLINK_EVIDENCE.md` lists every simulation run with its output; `docs/BUILD_LOG.md` is the full log with the failures and what they taught us.
 
@@ -128,9 +134,9 @@ docs/                    write-up, methodology, evidence, threat model, operatio
 ## Running it from a clean clone
 
 ```bash
-npm install
+npm ci
 cp .env.example .env            # fill in Blockfrost, mnemonics, OpenAI key
-npm test --workspaces           # TypeScript tests
+npm test           # TypeScript tests
 (cd contracts/cardano && aiken check)      # 27 validator tests
 (cd contracts/evm && forge test)           # 11 registry tests
 ```
@@ -147,10 +153,11 @@ To buy a report as an agent, gated by Chainlink:
 
 ```bash
 npm run buy -w @agentfund/buyer-agent -- addr_test1… [--tamper]
+npm run sweep -w @agentfund/keeper         # Masumi earnings, after collection
 npm run distribute -w @agentfund/keeper
 ```
 
-Full setup, including the Masumi payment service, is in `docs/OPERATIONS.md`.
+Full setup, including the Masumi payment service, is in `docs/OPERATIONS.md`. Report-quality checks, limits and three real preprod examples are in `docs/RESULT_QUALITY.md`; rerun the acceptance evaluation with `npm run evaluate -w @agentfund/shared`.
 
 ## Credits
 

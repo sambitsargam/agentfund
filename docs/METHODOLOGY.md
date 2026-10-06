@@ -1,6 +1,6 @@
 # How Atlas produces a report
 
-Atlas answers one question: **is this Cardano wallet safe to send money to?** It does that from public chain data only. It never asks for a signature, a key, or any private information.
+Atlas answers one question: **what does this Cardano address’s public history tell us before payment?** It does that from public chain data only. It never asks for a signature, a key, or any private information.
 
 ## Input
 
@@ -23,9 +23,13 @@ Free text is accepted; the first address-like token in it is used, so a Sokosumi
 | Stake delegation | Blockfrost `/accounts/{stake}` |
 | Counterparties | Blockfrost `/txs/{hash}/utxos` for the 8 most recent transactions; the other addresses appearing as inputs or outputs, counted by how many of those transactions they appear in |
 
+Atlas also checks for a Masumi registry NFT under the configured preprod policy and reads its public metadata (name, service, author and capability). This is a registration claim, not proof of safety. It inspects the lifetime history of the three most frequent counterparties in the eight-transaction sample. Registration never removes risk points or contract/no-staking-key warnings; it records identity claims separately.
+
 Every endpoint used is listed in the report's own "Sources" section, along with the transaction hashes it relied on.
 
 ## The risk score
+
+Missing core history produces Unknown. The report includes a recommended next step, exact sampling scope, and missing or conflicting balance checks. These limitations are shown in both Markdown and the dashboard.
 
 The score is a deterministic function of the measured facts and a timestamp — the same facts always give the same number, which is what lets the Chainlink workflow probe Atlas and lets anyone reproduce a verdict.
 
@@ -38,8 +42,9 @@ The score is a deterministic function of the measured facts and a timestamp — 
 | Fewer than 3 transactions | 15 |
 | 10 or more transactions in 24 h on an address under 7 days old | 10 |
 | No activity for more than 180 days | 10 |
-| Smart contract rather than a wallet | 15 |
+| Smart contract | 15 |
 | No staking key on a normal wallet | 5 |
+| At least two sampled counterparties each have 1–2 lifetime transactions | 10 |
 | Currently empty | 5 |
 | The two data sources disagree on the balance | 10 |
 
@@ -49,9 +54,11 @@ The weights encode one judgement: *age and history are hard to fake, balance is 
 
 ## Accuracy check
 
+See `docs/RESULT_QUALITY.md` for the reproducible sixteen-case policy evaluation and three known-role live snapshots. These check implementation consistency and observed facts, not fraud prediction accuracy.
+
 Risk scoring has no ground truth, so Atlas does not claim accuracy it cannot show. What it does instead is make its inputs checkable in two ways.
 
-**Independent cross-check.** The ADA balance is fetched a second time from [Koios](https://koios.rest), an independent indexer with its own node infrastructure, and the two are compared. Agreement is reported in the result; disagreement adds 10 risk points and says so in plain words, because it means one of the sources is lagging and the rest of the figures should be treated with care. In every report produced so far the two agreed exactly.
+**Independent cross-check.** The ADA balance is fetched a second time from [Koios](https://koios.rest), an independent indexer with its own node infrastructure, and the two are compared. Agreement is reported in the result; disagreement adds 10 risk points and says so in plain words, because it means one of the sources is lagging and the rest of the figures should be treated with care. The three live quality-evaluation snapshots agreed; missing or disagreeing responses remain explicit report states.
 
 **Reproducibility.** Every report lists the endpoints queried and the transaction hashes used, so a reader can re-run the same queries and get the same facts. The score is a pure function of those facts, and the scoring table is printed inside every report.
 
@@ -70,6 +77,6 @@ The 15 points come from it being a contract, which is correct and useful: you *s
 ## Known limits
 
 - **Preprod only.** Mainnet heuristics would need recalibration; a 30-day-old mainnet wallet is far more suspicious than a 30-day-old test wallet.
-- **Counterparties are sampled** from the 8 most recent transactions, not the full history, to keep a report under about 14 API calls and 3 seconds.
-- **No labels.** Atlas does not know that an address belongs to an exchange or a known scammer; it reports behaviour, not identity. A labelled-address feed is the obvious next source.
+- **Counterparties are sampled** from the 8 most recent transactions, not the full history, with up to three counterparties examined one hop further. Request count and latency vary with identity detection and address/handle resolution; older 11–14-call figures predate those checks.
+- **Limited identity data.** Masumi registry metadata identifies a registered agent's claims; Atlas has no exchange/scammer-labelled address feed and cannot verify the operator's real-world identity. A labelled-address feed is the obvious next source.
 - **A quiet address is not a safe one.** Low risk means "nothing here looks wrong", not "this is the right recipient". The report says so.

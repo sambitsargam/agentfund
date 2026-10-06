@@ -1,0 +1,11 @@
+{
+  "observedAt": "2026-10-06T10:54:25.298Z",
+  "paidTasksSeen": 4,
+  "paidCollectionsVerified": 1,
+  "paidTasksFailed": 3,
+  "paidTasksOngoing": 0,
+  "paidTasksWithDeliveredReport": 1,
+  "staleOngoing": 0,
+  "successFractionAmongTerminal": 0.25,
+  "scope": "Observed local Task state, including historical failures. This is not an uptime SLA or a statistically validated marketplace success rate."
+}

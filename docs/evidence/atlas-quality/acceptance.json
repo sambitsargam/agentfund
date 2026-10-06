@@ -1,0 +1,326 @@
+{
+  "generatedAt": "2026-10-06T10:02:29.794Z",
+  "scope": "Manually specified synthetic acceptance cases; not a labelled fraud dataset.",
+  "passed": 16,
+  "total": 16,
+  "cases": [
+    {
+      "id": "established-wallet",
+      "expected": {
+        "verdict": "low",
+        "risk": 0,
+        "flags": []
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 0,
+        "flags": []
+      },
+      "passed": true,
+      "reason": "No configured risk conditions are present; recipient authenticity remains unverified."
+    },
+    {
+      "id": "new-wallet",
+      "expected": {
+        "verdict": "high",
+        "risk": 50,
+        "flags": [
+          "brand_new",
+          "little_history"
+        ]
+      },
+      "actual": {
+        "verdict": "high",
+        "risk": 50,
+        "flags": [
+          "brand_new",
+          "little_history"
+        ]
+      },
+      "passed": true,
+      "reason": "Under one day adds 35; fewer than three transactions adds 15."
+    },
+    {
+      "id": "unused-address",
+      "expected": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "never_used"
+        ]
+      },
+      "actual": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "never_used"
+        ]
+      },
+      "passed": true,
+      "reason": "An unindexed address cannot be assessed."
+    },
+    {
+      "id": "contract",
+      "expected": {
+        "verdict": "low",
+        "risk": 15,
+        "flags": [
+          "smart_contract"
+        ]
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 15,
+        "flags": [
+          "smart_contract"
+        ]
+      },
+      "passed": true,
+      "reason": "Contract review adds 15 without claiming this contract is malicious."
+    },
+    {
+      "id": "registered-contract",
+      "expected": {
+        "verdict": "low",
+        "risk": 15,
+        "flags": [
+          "smart_contract"
+        ]
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 15,
+        "flags": [
+          "smart_contract"
+        ]
+      },
+      "passed": true,
+      "reason": "Registration must not remove the contract warning or reduce points."
+    },
+    {
+      "id": "registered-new-wallet",
+      "expected": {
+        "verdict": "high",
+        "risk": 50,
+        "flags": [
+          "brand_new",
+          "little_history"
+        ]
+      },
+      "actual": {
+        "verdict": "high",
+        "risk": 50,
+        "flags": [
+          "brand_new",
+          "little_history"
+        ]
+      },
+      "passed": true,
+      "reason": "Registration must not make a fresh wallet look safer."
+    },
+    {
+      "id": "no-stake-key",
+      "expected": {
+        "verdict": "low",
+        "risk": 5,
+        "flags": [
+          "no_stake_key"
+        ]
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 5,
+        "flags": [
+          "no_stake_key"
+        ]
+      },
+      "passed": true,
+      "reason": "Key-address context adds 5 without alleging fraud."
+    },
+    {
+      "id": "registered-no-stake-key",
+      "expected": {
+        "verdict": "low",
+        "risk": 5,
+        "flags": [
+          "no_stake_key"
+        ]
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 5,
+        "flags": [
+          "no_stake_key"
+        ]
+      },
+      "passed": true,
+      "reason": "Registration must not bypass key-address context."
+    },
+    {
+      "id": "thin-counterparties",
+      "expected": {
+        "verdict": "low",
+        "risk": 10,
+        "flags": [
+          "thin_counterparties"
+        ]
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 10,
+        "flags": [
+          "thin_counterparties"
+        ]
+      },
+      "passed": true,
+      "reason": "Two thin sampled counterparties add 10; this is a signal, not ground truth."
+    },
+    {
+      "id": "balance-disagreement",
+      "expected": {
+        "verdict": "low",
+        "risk": 10,
+        "flags": [
+          "sources_disagree"
+        ]
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 10,
+        "flags": [
+          "sources_disagree"
+        ]
+      },
+      "passed": true,
+      "reason": "Source disagreement adds 10; report recommendations separately require refreshing data."
+    },
+    {
+      "id": "missing-cross-check",
+      "expected": {
+        "verdict": "low",
+        "risk": 0,
+        "flags": []
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 0,
+        "flags": []
+      },
+      "passed": true,
+      "reason": "An unavailable advisory cross-check is reported as missing, never passed."
+    },
+    {
+      "id": "missing-first-activity",
+      "expected": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "incomplete_history"
+        ]
+      },
+      "actual": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "incomplete_history"
+        ]
+      },
+      "passed": true,
+      "reason": "Missing data must not be presented as an observed brand-new wallet."
+    },
+    {
+      "id": "missing-last-activity",
+      "expected": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "incomplete_history"
+        ]
+      },
+      "actual": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "incomplete_history"
+        ]
+      },
+      "passed": true,
+      "reason": "Incomplete core history cannot support a low-risk claim."
+    },
+    {
+      "id": "low-boundary",
+      "expected": {
+        "verdict": "low",
+        "risk": 20,
+        "flags": [
+          "smart_contract",
+          "empty"
+        ]
+      },
+      "actual": {
+        "verdict": "low",
+        "risk": 20,
+        "flags": [
+          "smart_contract",
+          "empty"
+        ]
+      },
+      "passed": true,
+      "reason": "15+5=20 is the inclusive low threshold."
+    },
+    {
+      "id": "medium-boundary",
+      "expected": {
+        "verdict": "medium",
+        "risk": 45,
+        "flags": [
+          "very_new",
+          "little_history",
+          "no_stake_key"
+        ]
+      },
+      "actual": {
+        "verdict": "medium",
+        "risk": 45,
+        "flags": [
+          "very_new",
+          "little_history",
+          "no_stake_key"
+        ]
+      },
+      "passed": true,
+      "reason": "25+15+5=45 is the inclusive medium threshold."
+    },
+    {
+      "id": "maximum-signals",
+      "expected": {
+        "verdict": "high",
+        "risk": 100,
+        "flags": [
+          "brand_new",
+          "little_history",
+          "burst",
+          "smart_contract",
+          "empty",
+          "thin_counterparties",
+          "sources_disagree"
+        ]
+      },
+      "actual": {
+        "verdict": "high",
+        "risk": 100,
+        "flags": [
+          "brand_new",
+          "little_history",
+          "burst",
+          "smart_contract",
+          "empty",
+          "thin_counterparties",
+          "sources_disagree"
+        ]
+      },
+      "passed": true,
+      "reason": "35+15+10+15+5+10+10=100; all reasons remain visible."
+    }
+  ]
+}

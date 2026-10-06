@@ -6,14 +6,14 @@ Atlas is meant to stay available after the hackathon. This is what it takes.
 
 | Process | Port | Why it must stay up | If it stops |
 | --- | --- | --- | --- |
-| `services/atlas` | 4021 | Serves the paid `/report` route, the free `/probe` the rating workflow calls, `/sample` for the auditors, and the x402 manifest the Masumi registration points at | Agent payments fail; the rating drops to 0 for the probe and latency |
+| `services/atlas` | 4021 | Serves the paid `/report` route, the free `/probe` the rating workflow calls, `/sample` for the auditors, and the x402 manifest; Standard Masumi registration points at the API base URL | Agent payments fail; the rating drops to 0 for the probe and latency |
 | `services/coworker` | 4030 | Polls Sokosumi for Tasks and drives the Masumi paid flow | Tasks sit unanswered; a paid Task in flight can miss its result deadline |
 | Masumi payment service | 3012 | Signs seller terms, tracks escrow, submits result hashes, collects | Paid Tasks cannot start, and a Task waiting on collection stalls |
 | PostgreSQL | 5432 | MPS state, including the encrypted wallets | MPS cannot start |
 | `services/keeper` | — | Splits locked payments | Payments pile up in the contract; nothing is lost, they settle on the next run |
 | `apps/web` | 3000 | The dashboard | Judges and investors cannot see the state |
 
-The keeper and the rating refresh are schedules, not daemons: `scripts/rating-loop.sh` runs the rating workflow every 15 minutes, which is what keeps the gate's one-hour freshness rule satisfied.
+The keeper is run manually today; install a sweep-then-distribute schedule during hosting. For ratings, `scripts/rating-loop.sh` runs the rating workflow every 15 minutes, which is what keeps the gate's one-hour freshness rule satisfied.
 
 ## Hosting
 
@@ -23,17 +23,13 @@ The shape that fits is Railway for anything long-running plus Vercel for the das
 
 - Turn **Serverless off** for every service; a sleeping worker misses Tasks and a sleeping MPS misses an escrow transition.
 - Set a **restart policy** so a crash recovers on its own.
-- Point each service's health check at `/health`.
+- Point Atlas and Coworker health checks at `/health`; use each other service's own health endpoint. The keeper is a command, not an HTTP service.
 - Inject secrets as environment variables; never bake a `.env` into an image.
 - Attach a volume for the Coworker's `COWORKER_DATA_DIR`. Task state lives there, and a container-local file disappears on redeploy, which is exactly when a paid Task would be repeated.
 
-**Vercel** — the dashboard. It needs `BLOCKFROST_PROJECT_ID`, `COWORKER_URL` and `BASE_SEPOLIA_RPC`. Leave `DEMO_ACTIONS` unset in production unless the buttons should run real payments; the caps in `apps/web/lib/jobs.ts` exist for when it is on.
+**Vercel** — the dashboard. It needs `BLOCKFROST_PROJECT_ID`, `COWORKER_URL` and `BASE_SEPOLIA_RPC`. Leave `DEMO_ACTIONS` unset on Vercel. Live actions launch local commands and the CRE CLI and require a persistent host with the repository, dependencies and testnet credentials; the guards in `apps/web/lib/jobs.ts` do not make that runtime available on Vercel.
 
-After deploying Atlas, point the registration at its public URL:
-
-```bash
-npm run register -w @agentfund/coworker -- url https://atlas.example.com/.well-known/x402.json
-```
+After deploying Atlas, update the Standard registration's `apiBaseUrl` to its public HTTPS base URL using MPS. The current CLI `url` subcommand sends `x402ResourcesUrl` and is intended for X402 registrations; do not use it to update this Standard registration. Keep the manifest at `/.well-known/x402.json` for x402 discovery.
 
 ## First-time setup from scratch
 
@@ -67,6 +63,26 @@ npm run register -w @agentfund/coworker
 npm run register -w @agentfund/coworker -- check   # until RegistrationConfirmed
 ```
 
+## Sweeping collected Masumi earnings
+
+Export the registered **selling** wallet from MPS Admin → Wallets. Put its seed phrase in the ignored application `.env` as `MPS_SELLING_WALLET_MNEMONIC`; do not paste it into chat or documentation. The sweep refuses to sign if this seed derives a different address from the registered payout address. Keep `services/coworker/data/registration.json` or point `COWORKER_DATA_DIR` at persisted state.
+
+```bash
+npm run sweep -w @agentfund/keeper
+# Wait for the printed transaction to appear on preprod before distributing.
+npm run distribute -w @agentfund/keeper
+```
+
+A transaction hash means submission; verify its outputs on-chain before declaring completion or retrying an ambiguous submission.
+
+## Task repayment timeline
+
+The dashboard reads each collected Task's transaction and follows exact output references through the direct sweep and splitter spend. It verifies both investor and Atlas receipts in Masumi tUSDM and excludes wallet change. Timeline figures are batch totals, not per-Task allocations.
+
+The worker publishes its public `collectionAddress` alongside the receipt. Older workers fall back to the current preprod collection-wallet configuration in `packages/shared/src/deal.ts`; set `MASUMI_PAYOUT_ADDRESS` on the dashboard when migrating registration, until the worker feed supplies the new address. Set `COWORKER_URL` to the worker's reachable base URL. Never substitute a mnemonic for this public address.
+
+The timeline deliberately leaves an indirect wallet transfer, partial sweep, unavailable indexer response or unmatched receipt unverified. Such cases require inspection; matching amounts or timestamps are not sufficient proof.
+
 ## Costs
 
 Everything below is testnet today; these are the mainnet equivalents.
@@ -75,7 +91,7 @@ Everything below is testnet today; these are the mainnet equivalents.
 | --- | --- |
 | Hosting (Railway: 4 small services + Postgres) | $20–40 / month |
 | Dashboard (Vercel hobby) | $0 |
-| Blockfrost | Free tier covers ~50k requests/day; a report uses 11–14 |
+| Blockfrost | Free tier covers ~50k requests/day; report request counts vary with subject resolution, agent identity and counterparty checks; each report lists its sources |
 | OpenAI auditors | About $0.002 per gated payment at current `gpt-4.1-mini` / `gpt-4o-mini` prices |
 | Cardano fees | ~0.17 ADA per payment (paid by the buyer), ~0.27 ADA per distribution batch (paid by Atlas) |
 | Masumi protocol fee | 5% of escrow payments |
@@ -107,3 +123,9 @@ Back up the MPS database and keep the encryption key somewhere else. Restoring o
 ## Monitoring
 
 `/health` on Atlas and the Coworker is enough for a host check — the Coworker's returns 503 if it has not polled in 60 seconds, so a stuck poll loop is visible rather than silent. Beyond that, the two things worth alerting on are the splitter holding funds for more than an hour (the keeper has stopped) and the rating's `observedAt` falling more than an hour behind (the rating loop has stopped, and the gate will start returning Review).
+
+## Automatic keeper and funding evidence
+
+Use `npm run loop -w @agentfund/keeper` for automatic sweep/confirmation/distribution/confirmation. Its ignored journal is `services/keeper/data/status.json`; `loop.lock` prevents duplicate daemons. Never run manual keeper commands concurrently. Inspect ambiguous submissions, blocked states and stale locks against the chain before recovery; do not delete state to force a retry. This process needs hosting supervision and alerts before a public reliability claim. Operator custody remains.
+
+The existing closed 2-test-ADA seed round can be inspected with `npm run funding -w @agentfund/keeper -- review` and independently reverified with `-- verify`. `-- fund` refuses a second attempt for an already attempted round. Do not edit the record to bypass that protection. Public terms/capital/payout records are in `docs/evidence/funding/`. Worker `/reliability` includes historical failures; keep its durable Task directory across deployments. See [CARDANO_HARDENING.md](CARDANO_HARDENING.md) for evidence and outstanding limits.

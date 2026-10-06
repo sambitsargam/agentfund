@@ -1,0 +1,234 @@
+{
+  "version": "2",
+  "generatedAt": "2026-10-06T10:02:32.000Z",
+  "subject": {
+    "input": "addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g",
+    "kind": "payment-address",
+    "address": "addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g",
+    "stakeAddress": null,
+    "handle": null
+  },
+  "agent": null,
+  "counterpartyRisk": [
+    {
+      "address": "addr_test1qz2aac04ekm83yyy6d0wwah870939s52a3d704saq7fqagm606t6gx6v3cg7sy9g652dvg2v5qf3mdmz0d9vl77shr6s0h5dsg",
+      "transactions": 37,
+      "seen": 5,
+      "isScript": false,
+      "thin": false
+    },
+    {
+      "address": "addr_test1qq8ve7jfn5f6tnk2s3annd7qeyd9ahdg3ukhvtqj62jjmhzhrpwjxfrcs6ax5fr9gfxervq2rp0gx50k675l3njawpmq00zwkv",
+      "transactions": 7,
+      "seen": 2,
+      "isScript": false,
+      "thin": false
+    },
+    {
+      "address": "addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf",
+      "transactions": 8,
+      "seen": 1,
+      "isScript": false,
+      "thin": false
+    }
+  ],
+  "facts": {
+    "found": true,
+    "isScript": true,
+    "balanceAda": "24459.44973",
+    "tusdmBalance": "425.320301",
+    "tokenKinds": 2,
+    "txCount": 2534,
+    "firstSeen": "2026-07-03T11:10:12.000Z",
+    "lastSeen": "2026-10-06T09:47:22.000Z",
+    "ageDays": 94,
+    "txsLast24h": 87,
+    "txsLast30d": 100,
+    "txsLast30dCapped": true,
+    "delegatedPool": null,
+    "topCounterparties": [
+      {
+        "address": "addr_test1qz2aac04ekm83yyy6d0wwah870939s52a3d704saq7fqagm606t6gx6v3cg7sy9g652dvg2v5qf3mdmz0d9vl77shr6s0h5dsg",
+        "transactions": 5
+      },
+      {
+        "address": "addr_test1qq8ve7jfn5f6tnk2s3annd7qeyd9ahdg3ukhvtqj62jjmhzhrpwjxfrcs6ax5fr9gfxervq2rp0gx50k675l3njawpmq00zwkv",
+        "transactions": 2
+      },
+      {
+        "address": "addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf",
+        "transactions": 1
+      }
+    ]
+  },
+  "score": {
+    "risk": 15,
+    "verdict": "low",
+    "headline": "Low risk signals in the checked history. Confirm the recipient; this does not establish that it is safe to pay.",
+    "redFlags": [
+      {
+        "code": "smart_contract",
+        "severity": "medium",
+        "points": 15,
+        "message": "This is a smart contract, not a person's wallet. Check what the contract does before paying it."
+      }
+    ],
+    "goodSigns": [
+      "In use for 94 days.",
+      "2534 transactions of history.",
+      "Active in the last 30 days (100 transactions)."
+    ]
+  },
+  "assessment": {
+    "nextStep": "Confirm the exact address and payment purpose with the recipient through a separate channel. Review any warnings before paying.",
+    "limitations": [
+      "The score describes observed history, not a probability of fraud or a guarantee of payment safety.",
+      "No scam/exchange labels or verification of the recipient’s real-world identity are available.",
+      "Counterparties are sampled from at most 8 recent transactions, not the full history. Other addresses in a transaction are not necessarily direct trading partners.",
+      "This is a Cardano preprod report using testnet activity; it is not a mainnet assessment.",
+      "Recent activity is limited to the last 100 transactions; window counts may be lower bounds."
+    ],
+    "balanceStatus": "matched",
+    "sampledTransactions": 8,
+    "counterpartiesChecked": 3
+  },
+  "crossCheck": {
+    "field": "balance_lovelace",
+    "blockfrost": "24459449730",
+    "koios": "24459449730",
+    "matches": true
+  },
+  "method": [
+    "Checked the payment address as given.",
+    "Read balance, transaction count, first and last 100 transactions, and stake delegation from Blockfrost (Cardano preprod).",
+    "Counterparties are the other addresses in the 8 most recent transactions.",
+    "Cross-checked the ADA balance against Koios, an independent indexer.",
+    "Looked for a Masumi registry token at the address, which records a registration identity and the operator’s claims, without certifying safety.",
+    "Checked up to three frequent co-occurring addresses for thin history; co-occurrence does not establish a direct payment relationship."
+  ],
+  "scoringRules": [
+    "Never used on preprod: risk 60, verdict unknown.",
+    "First used under 1 day ago +35, under 7 days +25, under 30 days +10.",
+    "Fewer than 3 transactions +15.",
+    "10 or more transactions in the last 24 hours on an address under 7 days old +10.",
+    "Inactive for more than 180 days +10.",
+    "Smart contract address +15.",
+    "No staking key on a normal wallet +5.",
+    "Empty balance +5.",
+    "Blockfrost and Koios disagree on the balance +10.",
+    "Two or more of its main counterparties have almost no history +10.",
+    "Masumi registration records identity claims and never removes risk points.",
+    "Missing core transaction history produces an unknown verdict; points are a heuristic, not a probability of fraud.",
+    "Risk is capped at 100. 0–20 low, 21–45 medium, above 45 high."
+  ],
+  "sources": [
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g/transactions?order=desc&count=100"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g/total"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g/transactions?order=asc&count=1"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/b1f74d5fa25eecc1d8c04c996634b7508859181eb4b7f2cb9252facbbca6ca6d/utxos",
+      "txHashes": [
+        "b1f74d5fa25eecc1d8c04c996634b7508859181eb4b7f2cb9252facbbca6ca6d"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/e88f05f6a46144e0f3f9a5c4eae8de3ae7076aa5ec07fc35c35373179177fed9/utxos",
+      "txHashes": [
+        "e88f05f6a46144e0f3f9a5c4eae8de3ae7076aa5ec07fc35c35373179177fed9"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/dc8d072f8a64153674c65c1084c98853c69e1cbb23e12a87261a5e203feada2a/utxos",
+      "txHashes": [
+        "dc8d072f8a64153674c65c1084c98853c69e1cbb23e12a87261a5e203feada2a"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/f60d247d30e075f69cd5b876c49df45a4aadf68fa7fc67d0a00c60edb2321fd2/utxos",
+      "txHashes": [
+        "f60d247d30e075f69cd5b876c49df45a4aadf68fa7fc67d0a00c60edb2321fd2"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/216f781ace511d1f4e690ea3633916b03d7289950601a4ff99e4fa6eaf12f34b/utxos",
+      "txHashes": [
+        "216f781ace511d1f4e690ea3633916b03d7289950601a4ff99e4fa6eaf12f34b"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/709ffeede4a503ea3c3b03f0dcddf1db6aa953bf4d23d740e13cecc124db4ceb/utxos",
+      "txHashes": [
+        "709ffeede4a503ea3c3b03f0dcddf1db6aa953bf4d23d740e13cecc124db4ceb"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/0ae460f6d36d76c600dd84287a9d3834754c6d9ea1e56ce3939a00c080b587f9/utxos",
+      "txHashes": [
+        "0ae460f6d36d76c600dd84287a9d3834754c6d9ea1e56ce3939a00c080b587f9"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/txs/5ffa09a7a08d8931648801a84f311f4c569d99c1528650c81a2a5fcd8734a649/utxos",
+      "txHashes": [
+        "5ffa09a7a08d8931648801a84f311f4c569d99c1528650c81a2a5fcd8734a649"
+      ]
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf/total"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1qz2aac04ekm83yyy6d0wwah870939s52a3d704saq7fqagm606t6gx6v3cg7sy9g652dvg2v5qf3mdmz0d9vl77shr6s0h5dsg"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1qz2aac04ekm83yyy6d0wwah870939s52a3d704saq7fqagm606t6gx6v3cg7sy9g652dvg2v5qf3mdmz0d9vl77shr6s0h5dsg/total"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1qq8ve7jfn5f6tnk2s3annd7qeyd9ahdg3ukhvtqj62jjmhzhrpwjxfrcs6ax5fr9gfxervq2rp0gx50k675l3njawpmq00zwkv/total"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g"
+    },
+    {
+      "provider": "blockfrost",
+      "endpoint": "/addresses/addr_test1qq8ve7jfn5f6tnk2s3annd7qeyd9ahdg3ukhvtqj62jjmhzhrpwjxfrcs6ax5fr9gfxervq2rp0gx50k675l3njawpmq00zwkv"
+    },
+    {
+      "provider": "koios",
+      "endpoint": "/address_info"
+    }
+  ]
+}

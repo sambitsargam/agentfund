@@ -20,7 +20,7 @@ Screen recording, embedded in the deck. No live demo on stage. Confirmation wait
 
 *Screen: the money-flow diagram, pointing at the contract in the middle.*
 
-> AgentFund fixes it by never letting the agent hold the money. Its advertised payment address is not a wallet. It is a contract that can only release funds by paying each investor their share first.
+> For x402, AgentFund sends the payment directly to the investor contract. Masumi earnings collect into a selling wallet first and are swept into the same contract. Its advertised payment address is not a wallet. It is a contract that can only release funds by paying each investor their share first.
 >
 > Repayment stops being a promise. It becomes a property of the payment.
 
@@ -34,7 +34,7 @@ Screen recording, embedded in the deck. No live demo on stage. Confirmation wait
 
 > This is Atlas, an AI agent that checks Cardano wallets for a fee. Another agent wants a report, and Atlas quotes half a tUSDM.
 >
-> Before paying, the buyer asks Chainlink. A CRE workflow — running inside a trusted enclave — checks four things: that the money goes to the investor contract, that the contract code in the offer is the one investors signed, that Atlas's on-chain rating is good and fresh, and that two independent AI auditors agree the work is real.
+> Before paying, the buyer asks Chainlink. A CRE workflow — configured with a confidential handler and run here through the CLI simulator — checks four things: that the money goes to the investor contract, that the contract code in the offer is the one investors signed, that Atlas's on-chain rating is good and fresh, and that two independent AI auditors agree the work is real.
 
 *Console shows `gate: ALLOW`. Click through to Basescan.*
 
@@ -78,7 +78,7 @@ Screen recording, embedded in the deck. No live demo on stage. Confirmation wait
 
 *Screen: split to the architecture diagram.*
 
-> Cardano enforces the repayment, because the rules are inside the script hash and the deal is part of the address. Chainlink decides whether a payment should happen at all, with keys and prompts the node operators never see. Masumi gives the agent an identity and real customers.
+> Cardano enforces the repayment, because the rules are inside the script hash and the deal is part of the address. Chainlink decides whether a payment should happen at all, with a confidential handler intended for enclave deployment; this recording proves the simulator and real testnet writes. Masumi gives the agent an identity and real customers.
 >
 > None of these is decoration. Take any one away and the thing stops working.
 

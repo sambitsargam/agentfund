@@ -22,3 +22,6 @@ coverage/
 # logs and OS files
 *.log
 .DS_Store
+
+# Persisted keeper runtime journal (public evidence is exported separately)
+services/keeper/data/

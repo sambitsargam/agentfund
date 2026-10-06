@@ -10,10 +10,10 @@ Who is trusted, what each component actually enforces, and where the gaps are.
 | Cardano | Execution and finality | — |
 | Atlas's operator | Advertising the splitter as its payment address | Not trusted blindly: the payment gate re-derives the address and denies a payment that goes anywhere else |
 | The x402 facilitator | Broadcasting a signed transaction | It holds no keys and cannot alter a signed transaction; it also independently re-derives the script address |
-| Chainlink CRE | The rating and the payment verdict | Several independent nodes must agree; the verdict is a public on-chain record |
+| Chainlink CRE | The rating and the payment verdict | Current CLI simulation writes a public on-chain record; independent DON consensus awaits deployment |
 | The LLM auditors | An opinion, never a decision on their own | A malformed or missing answer becomes Review, never Allow; a wrong destination is denied before auditors are consulted |
 
-**Nobody is trusted to forward money.** That is the point: the agent never holds the investor's share.
+**x402 funds go directly to the splitter. Masumi earnings require an operator-controlled wallet sweep.** The investor relies on the operator until that sweep confirms; the splitter enforces the share once funds arrive.
 
 ## What each component enforces
 
@@ -34,10 +34,12 @@ Who is trusted, what each component actually enforces, and where the gaps are.
 
 ### The payment gate (`workflows/payment-gate`)
 
-Runs inside a TEE with a **closed** capability list, so a compromised workflow body cannot reach beyond what one decision needs:
+Is configured with a TEE handler and a **closed** capability list, so a compromised workflow body cannot reach beyond what one decision needs:
 
 - at most 4 HTTP sends, 1 EVM read, 1 EVM write, 1 consensus report;
 - only three named secrets: `blockfrost_project_id`, `auditor_a_key`, `auditor_b_key`.
+
+Current verification uses local CLI simulation and does not prove execution in an enclave.
 
 Its policy fails closed. A wrong `payTo`, a script that does not hash to the deployed validator, a disallowed asset, or an amount over the cap is an immediate **Deny**, decided before any auditor is called. A stale or low rating, an unreachable splitter, a disagreeing auditor, a low-confidence answer or malformed JSON is **Review**. **Allow** requires every check to pass.
 
@@ -47,11 +49,11 @@ Pays only on Allow, and only an offer identical to the one approved — same des
 
 ## Known gaps
 
-**Anyone can trigger a distribution, and keeps the leftover ADA.** The validator constrains the governed tokens, not ADA. A settler pays the fee and may keep the min-UTxO ADA that arrived with the payments. This is deliberate — it makes distribution permissionless, so an investor is never blocked by an uncooperative agent — but it means the ADA is a small bounty rather than a protected asset. Mitigation: the keeper runs on a schedule, so there is rarely anything worth taking.
+**Anyone can trigger a distribution, and keeps the leftover ADA.** The validator constrains the governed tokens, not ADA. A settler pays the fee and may keep the min-UTxO ADA that arrived with the payments. This is deliberate — it makes distribution permissionless, so an investor is never blocked by an uncooperative agent — but it means the ADA is a small bounty rather than a protected asset. Mitigation: run distribution regularly; an unattended keeper schedule remains a hosting task.
 
 **Escrow earnings pass through a wallet the operator controls.** We tried to remove this by setting the selling wallet's collection address to the splitter. The payment service accepted the change, but requesting signed seller terms then failed: *"sellerReturnAddress must be a Cardano base or enterprise address with a payment key credential"*. Masumi's escrow datum cannot name a script address as the seller's return address, so **escrow cannot pay out directly into the contract**. We reverted to the key wallet, and the keeper sweeps tUSDM from it into the splitter instead.
 
-The gap is the interval between collection and sweep. In it, escrow earnings sit in a wallet the operator controls, so an investor is trusting the operator for that window rather than the code — unlike x402 payments, which go straight into the contract and are never exposed. Mitigations today: the sweep runs on the same schedule as distribution, the wallet's balance is public and visible on the dashboard, and the amounts are bounded by what is collected between runs. Removing it properly needs Masumi to allow a script return address, or a thin key-address forwarding contract owned by the deal rather than the operator.
+The gap is the interval between collection and sweep. In it, escrow earnings sit in a wallet the operator controls, so an investor is trusting the operator for that window rather than the code — unlike x402 payments, which go straight into the contract and are never exposed. Current controls: the wallet balance is public, the sweep checks its derived address against the registered payout address before signing, and collection → sweep → split has been verified on preprod. An unattended sweep/distribution schedule and selling-wallet balance monitoring remain hosting tasks. Removing it properly needs Masumi to allow a script return address, or a thin key-address forwarding contract owned by the deal rather than the operator.
 
 **The investor set is a script parameter.** Adding an investor produces a different address, so an existing round cannot take a new participant without migrating. A cap-table reference input or share tokens would fix this.
 
@@ -62,3 +64,7 @@ The gap is the interval between collection and sweep. In it, escrow earnings sit
 **LLM auditors can be wrong.** They are deliberately never decisive: they cannot turn a bad destination into an Allow, and anything they get wrong in the cautious direction only causes a Review. An auditor that wrongly approves is caught by the deterministic checks that run first.
 
 **Test networks only.** Everything here uses preprod and Base Sepolia with test money. Mainnet would need an audit of the validator, a funded operations wallet with monitoring, and recalibrated risk weights.
+
+## October hardening evidence limits
+
+The automated keeper can stop or be disabled by the operator and cannot force future Masumi receipts from the key-controlled return wallet. Registration metadata does not certify trustworthiness; funded identity now matches the configured address rather than a self-declared name. A source-list lookup is neither a fraud classifier nor a safe-address list. The closed seed demonstration does not provide conditional share allocation, principal repayment guarantees or general investor onboarding. See [CARDANO_HARDENING.md](CARDANO_HARDENING.md).

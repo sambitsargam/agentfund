@@ -56,7 +56,7 @@ The first funded agent: a Cardano counterparty due-diligence Coworker.
 
 - Paste a wallet address before you send money to it; get a plain-language verdict with the facts, the method, and links to the public record.
 - For treasury, payments, grants and OTC teams.
-- Two income routes, one contract: teams hire it on Sokosumi (Masumi escrow), agents pay per report (x402).
+- Two income routes, one contract: teams hire it on Sokosumi (Masumi escrow → selling wallet → keeper sweep), agents pay per report (x402).
 
 *Visual: a real report, the one from the event workspace.*
 
@@ -91,9 +91,9 @@ Not a price feed — the thing that decides.
 | Workflow | Trigger | Does |
 | --- | --- | --- |
 | Rating | cron + HTTP | Reads real earnings from the contract via Blockfrost, probes the agent, agrees across nodes, writes a signed rating |
-| Payment gate | HTTP, **in a TEE** | Checks destination, contract hash, rating freshness and two AI auditors — then writes Allow / Deny / Review |
+| Payment gate | HTTP, **TEE handler; CLI simulation today** | Checks destination, contract hash, rating freshness and two AI auditors — then writes Allow / Deny / Review |
 
-LLM keys and prompts stay inside the enclave. The buyer pays only on Allow, and only the exact offer that was approved.
+Enclave confidentiality and DON consensus remain deployment work; the demo proves local simulation with real testnet writes. The buyer pays only on Allow, and only the exact offer that was approved.
 
 *Visual: the DENY row from the dashboard with its Basescan link.*
 
@@ -142,4 +142,4 @@ Links: live dashboard · public repo · Sokosumi Coworker `Atlas` · contract ad
 - [ ] Live URL reachable from a phone
 - [ ] Cardano: preprod prototype, docs, ≤3-minute video, write-up, hosted-facilitator payment hash, Coworker ID, sample Task, Task ID, payment event IDs, collection tx hash
 - [ ] Chainlink: simulation output, logs and transaction hashes in `docs/CHAINLINK_EVIDENCE.md`
-- [ ] Submitted to all three tracks before **Wednesday 7 October, 9pm SGT**
+- [ ] Submitted to all three tracks by the internal target of **Wednesday 7 October, 9pm SGT** (brief deadline: 11:59pm SGT)

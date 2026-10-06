@@ -1,0 +1,22 @@
+{
+  "terms": {
+    "version": 1,
+    "network": "preprod",
+    "agentId": "atlas",
+    "capitalLovelace": "2000000",
+    "capitalRecipient": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+    "investor": {
+      "name": "Investor A",
+      "address": "addr_test1qqwdk97gwef6ypkjcd9hhgpls8ela9fdvee2wvaxnkmjqdtj5pvye96gvjtm2jv70mtyqsczypsl8f2d3dgtlcmktk0sv74rjj",
+      "bps": 1000
+    },
+    "splitter": "addr_test1wzyukctzs3agkmx9gt85dp2ftu9622k8926qh7kjhlw3z8s7w0h96",
+    "scriptHash": "89cb6162847a8b6cc542cf4685495f0ba52ac72ab40bfad2bfdd111e",
+    "terms": "2 test ADA for the existing 10% share of governed earnings reaching this contract. No principal guarantee, repayment cap or transferable share token. Masumi earnings depend on the operator sweep."
+  },
+  "termsHash": "0e4dacc657eb49b71d50d9419fca291eacf83a8b4d79ce8b62d93e0142bce179",
+  "state": "funded",
+  "txHash": "d9d65fc3153abf6a59ed3f7c108b9f67f12e3ca46c06dff3a063232fb5c74af7",
+  "fundedAt": "2026-10-06T10:38:08.000Z",
+  "verifiedAt": "2026-10-06T10:50:26.921Z"
+}
