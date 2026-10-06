@@ -25,3 +25,4 @@ coverage/
 
 # Persisted keeper runtime journal (public evidence is exported separately)
 services/keeper/data/
+.vercel
