@@ -110,8 +110,15 @@ export function start(action: ActionName): Job {
   const push = (chunk: Buffer) => {
     for (const raw of chunk.toString().split("\n")) {
       const line = raw.trim();
-      // Keep the human-readable progress, drop npm noise and stack traces.
-      if (!line || /^\s*at |node:internal|npm (warn|notice)|^>/.test(line)) continue;
+      // Keep the human-readable progress; drop stack traces, npm noise, CLI banners and box drawing.
+      if (
+        !line ||
+        /^\s*at |node:internal|npm (warn|notice)|^>/.test(line) ||
+        /[│╭╰─┃┌└├]/.test(line) ||
+        /Update available|cre update|releases to upgrade|Initializing\.\.\.|Loading settings|Checking RPC|Compiling workflow|Simulation limits|Binary hash|Config hash|SIMULATION\]/.test(line)
+      ) {
+        continue;
+      }
       job.lines.push(line.replace(/^\d{4}-\d{2}-\d{2}T\S+\s+\[USER LOG\]\s*/, ""));
       if (job.lines.length > MAX_LINES) job.lines.splice(0, job.lines.length - MAX_LINES);
     }

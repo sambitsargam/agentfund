@@ -120,3 +120,5 @@ Three paid Tasks in the event workspace were charged credits by Core and then **
 The agent was registered with `type: "X402"` and an `x402ResourcesUrl`. Masumi's own reference implementation registers `type: "Standard"` with an `apiBaseUrl` for exactly this flow, so the access model is the difference: a Sokosumi Task is bought through the Task interface, not through x402 resources. x402 payments need no registry entry at all — the facilitator re-derives the script address from the 402 itself, which is what tx `76abb642…` and the gated payments prove.
 
 Deregistered the X402 agent (`DeregistrationConfirmed`) and re-registered as `Standard` with `apiBaseUrl` pointing at Atlas. `MASUMI_ACCESS_MODEL` selects the model; `Standard` is the default.
+
+**Confirmed the diagnosis.** With the Standard registration (`cmuwev0io001e57ujoe49a0y3`, agent identifier `67ab0c92…000000`), the next paid Task reached `claimStatus: PURCHASED` instead of `REFUNDED`, so Core funded the claim. Every refused attempt had been X402; the first Standard attempt was purchased.
