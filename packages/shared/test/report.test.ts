@@ -31,6 +31,8 @@ const base: Facts = {
   txsLast30d: 4,
   delegatedPool: "pool1abc",
   crossCheckMatches: true,
+  isRegisteredAgent: false,
+  thinCounterparties: 0,
 };
 
 describe("input parsing", () => {
@@ -70,6 +72,17 @@ describe("scoring", () => {
     const s = scoreFacts({ ...base, found: false }, NOW);
     expect(s.verdict).toBe("unknown");
     expect(s.risk).toBe(60);
+  });
+
+  it("treats a registered AI agent as an identity, not an unknown contract", () => {
+    const s = scoreFacts({ ...base, isScript: true, isRegisteredAgent: true }, NOW);
+    expect(s.redFlags.map((f) => f.code)).not.toContain("smart_contract");
+    expect(s.goodSigns.join(" ")).toMatch(/registered as an ai agent/i);
+  });
+
+  it("flags a wallet surrounded by brand-new counterparties", () => {
+    const s = scoreFacts({ ...base, thinCounterparties: 2 }, NOW);
+    expect(s.redFlags.map((f) => f.code)).toContain("thin_counterparties");
   });
 
   it("flags disagreeing sources and smart contracts", () => {
@@ -132,7 +145,7 @@ describe("buildReport", () => {
     expect(report.score.verdict).toBe("low");
     expect(report.sources.some((s) => s.provider === "koios")).toBe(true);
     expect(report.sources.flatMap((s) => s.txHashes ?? [])).toEqual([tx1, tx2]);
-    expect(report.method.length).toBe(4);
+    expect(report.method.length).toBe(6);
     expect(report.scoringRules.length).toBeGreaterThan(5);
   });
 

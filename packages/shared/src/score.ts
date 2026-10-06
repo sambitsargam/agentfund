@@ -11,6 +11,10 @@ export interface Facts {
   txsLast30d: number;
   delegatedPool: string | null;
   crossCheckMatches: boolean | null;
+  /** Registered as an AI agent on Masumi. */
+  isRegisteredAgent: boolean;
+  /** Counterparties with almost no history of their own. */
+  thinCounterparties: number;
 }
 
 export type Severity = "high" | "medium" | "info";
@@ -43,6 +47,8 @@ export const SCORING_RULES = [
   "No staking key on a normal wallet +5.",
   "Empty balance +5.",
   "Blockfrost and Koios disagree on the balance +10.",
+  "Two or more of its main counterparties have almost no history +10.",
+  "A smart contract that is a registered AI agent is treated as a normal wallet, not an unknown contract.",
   "Risk is capped at 100. 0–20 low, 21–45 medium, above 45 high.",
 ];
 
@@ -88,7 +94,9 @@ export function scoreFacts(f: Facts, nowSeconds: number): Score {
     good.push(`Active in the last 30 days (${f.txsLast30d} transaction${f.txsLast30d === 1 ? "" : "s"}).`);
   }
 
-  if (f.isScript) {
+  if (f.isRegisteredAgent) {
+    good.push("Registered as an AI agent on Masumi, with its service and author recorded on-chain.");
+  } else if (f.isScript) {
     add("smart_contract", "medium", 15, "This is a smart contract, not a person's wallet. Check what the contract does before paying it.");
   } else if (!f.hasStakeKey) {
     add("no_stake_key", "info", 5, "No staking key. Common for exchange and service wallets, unusual for a person.");
@@ -97,6 +105,15 @@ export function scoreFacts(f: Facts, nowSeconds: number): Score {
   if (f.delegatedPool) good.push("Stake is delegated to a pool, which suggests an owner who manages the wallet.");
   if (f.balanceLovelace === 0n) add("empty", "info", 5, "The address is currently empty.");
   if (f.tokenKinds >= 3) good.push(`Holds ${f.tokenKinds} kinds of tokens.`);
+
+  if (f.thinCounterparties >= 2) {
+    add(
+      "thin_counterparties",
+      "medium",
+      10,
+      `${f.thinCounterparties} of the addresses it deals with most have almost no history of their own, which is a pattern seen in freshly built payment chains.`,
+    );
+  }
 
   if (f.crossCheckMatches === false) {
     add("sources_disagree", "medium", 10, "Two independent data sources disagree on the balance. Try again in a minute.");

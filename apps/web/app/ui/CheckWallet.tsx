@@ -155,6 +155,36 @@ function ReportView({ report, sokosumiUrl }: { report: Report; sokosumiUrl: stri
         on Cardano preprod
       </div>
 
+      {report.agent && (
+        <div className="agent-card">
+          <div className="agent-top">
+            <span className="agent-badge">Registered AI agent</span>
+            <b>{report.agent.name}</b>
+          </div>
+          <dl>
+            {report.agent.author && (
+              <div>
+                <dt>Author</dt>
+                <dd>{report.agent.author}</dd>
+              </div>
+            )}
+            {report.agent.capability && (
+              <div>
+                <dt>Service</dt>
+                <dd>{report.agent.capability}</dd>
+              </div>
+            )}
+            {report.agent.apiBaseUrl && (
+              <div>
+                <dt>Advertises</dt>
+                <dd className="mono">{report.agent.apiBaseUrl}</dd>
+              </div>
+            )}
+          </dl>
+          <p>Its identity and what it sells are recorded on Cardano through Masumi, not just claimed on a website.</p>
+        </div>
+      )}
+
       <dl className="report-facts">
         {facts.map(([k, val]) => (
           <div key={k}>
@@ -181,6 +211,23 @@ function ReportView({ report, sokosumiUrl }: { report: Report; sokosumiUrl: stri
           <ul>
             {report.score.goodSigns.map((g) => (
               <li key={g}>{g}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {report.counterpartyRisk.length > 0 && (
+        <div className="report-block who">
+          <h4>Who it deals with</h4>
+          <ul>
+            {report.counterpartyRisk.map((c) => (
+              <li key={c.address}>
+                <a className="mono" href={`${CARDANOSCAN}/address/${c.address}`} target="_blank" rel="noreferrer">
+                  {short(c.address)}
+                </a>{" "}
+                — {c.isScript ? "smart contract" : c.thin ? `only ${c.transactions} transaction${c.transactions === 1 ? "" : "s"} of its own` : `${c.transactions} transactions of its own`}, seen{" "}
+                {c.seen} time{c.seen === 1 ? "" : "s"} with this wallet
+              </li>
             ))}
           </ul>
         </div>

@@ -25,6 +25,14 @@ export function renderReportMarkdown(r: Report): string {
       : short(s.address);
   lines.push(`Checked: [${label}](${cardanoscan.address(s.address)}) on Cardano preprod, ${r.generatedAt.replace("T", " ").slice(0, 16)} UTC`, "");
 
+  if (r.agent) {
+    lines.push("### Who this is", "");
+    lines.push(`- **Registered AI agent:** ${r.agent.name}${r.agent.author ? ` by ${r.agent.author}` : ""}`);
+    if (r.agent.capability) lines.push(`- **Service:** ${r.agent.capability}`);
+    if (r.agent.apiBaseUrl) lines.push(`- **Advertises:** ${r.agent.apiBaseUrl}`);
+    lines.push("- Registered on Masumi, so its identity and what it sells are recorded on Cardano, not just claimed.", "");
+  }
+
   lines.push("### Key facts", "");
   if (!f.found) {
     lines.push("- No transactions have ever touched this address.");
@@ -41,6 +49,15 @@ export function renderReportMarkdown(r: Report): string {
     }
   }
   lines.push("");
+
+  if (r.counterpartyRisk.length > 0) {
+    lines.push("### Who it deals with", "");
+    for (const c of r.counterpartyRisk) {
+      const what = c.isScript ? "smart contract" : c.thin ? `only ${c.transactions} transaction${c.transactions === 1 ? "" : "s"} of its own` : `${c.transactions} transactions of its own`;
+      lines.push(`- [${short(c.address)}](${cardanoscan.address(c.address)}) — ${what}, seen ${c.seen} time${c.seen === 1 ? "" : "s"} with this wallet`);
+    }
+    lines.push("");
+  }
 
   lines.push("### Red flags", "");
   if (r.score.redFlags.length === 0) lines.push("- None found.");

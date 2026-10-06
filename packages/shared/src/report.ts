@@ -1,4 +1,5 @@
 import { TUSDM_UNITS, formatAda, formatTusdm } from "./assets.js";
+import { assessCounterparties, detectRegisteredAgent, type CounterpartyRisk, type RegisteredAgent } from "./agent.js";
 import { ChainClient, type SourceRecord } from "./chain.js";
 import { SCORING_RULES, scoreFacts, type Facts, type Score } from "./score.js";
 import { resolveSubject, type Subject } from "./subject.js";
@@ -18,6 +19,9 @@ export interface Report {
   version: string;
   generatedAt: string;
   subject: Subject;
+  /** Set when the address belongs to an AI agent registered on Masumi. */
+  agent: RegisteredAgent | null;
+  counterpartyRisk: CounterpartyRisk[];
   facts: {
     found: boolean;
     isScript: boolean;
@@ -124,6 +128,14 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
     }
   }
 
+  const top = [...counterparties.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 3)
+    .map(([address, transactions]) => ({ address, transactions }));
+  const [agent, counterpartyRisk] = found
+    ? await Promise.all([detectRegisteredAgent(address, chain), assessCounterparties(top, chain)])
+    : [null, [] as CounterpartyRisk[]];
+
   let koiosBalance: string | null = null;
   try {
     const k = await chain.koios<KoiosAddressInfo[]>("/address_info", { _addresses: [address] });
@@ -148,6 +160,8 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
     txsLast30d: recent.filter((t) => nowSeconds - t.block_time <= 30 * 86_400).length,
     delegatedPool,
     crossCheckMatches,
+    isRegisteredAgent: agent !== null,
+    thinCounterparties: counterpartyRisk.filter((c) => c.thin).length,
   };
   const score = scoreFacts(facts, nowSeconds);
 
@@ -156,6 +170,8 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
     version: REPORT_VERSION,
     generatedAt: new Date(nowSeconds * 1000).toISOString(),
     subject,
+    agent,
+    counterpartyRisk,
     facts: {
       found,
       isScript: facts.isScript,
@@ -170,10 +186,7 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
       txsLast30d: facts.txsLast30d,
       txsLast30dCapped: recent.length === RECENT_WINDOW && facts.txsLast30d === RECENT_WINDOW,
       delegatedPool,
-      topCounterparties: [...counterparties.entries()]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .slice(0, 3)
-        .map(([addr, n]) => ({ address: addr, transactions: n })),
+      topCounterparties: top,
     },
     score,
     crossCheck: { field: "balance_lovelace", blockfrost: lovelace.toString(), koios: koiosBalance, matches: crossCheckMatches },
@@ -184,6 +197,8 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
       `Read balance, transaction count, first and last ${RECENT_WINDOW} transactions, and stake delegation from Blockfrost (Cardano preprod).`,
       `Counterparties are the other addresses in the ${COUNTERPARTY_SAMPLE} most recent transactions.`,
       "Cross-checked the ADA balance against Koios, an independent indexer.",
+      "Looked for a Masumi registry token at the address, which identifies it as a registered AI agent and reveals what it claims to do.",
+      "Checked each main counterparty's own history, so a clean-looking wallet surrounded by brand-new ones is not reported as safe.",
     ],
     scoringRules: SCORING_RULES,
     sources: chain.sources,

@@ -6,3 +6,4 @@ export * from "./report.js";
 export * from "./score.js";
 export * from "./subject.js";
 export * from "./deal.js";
+export * from "./agent.js";
