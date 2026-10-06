@@ -1,0 +1,21 @@
+{
+  "name": "@agentfund/buyer-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "buy": "tsx src/main.ts buy",
+    "fanout": "tsx src/main.ts fanout",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@agentfund/shared": "0.1.0",
+    "@evolution-sdk/evolution": "0.5.16",
+    "@x402/cardano": "2.26.0",
+    "@x402/core": "2.26.0",
+    "@x402/fetch": "2.26.0",
+    "dotenv": "16.4.7",
+    "viem": "2.57.3"
+  }
+}
