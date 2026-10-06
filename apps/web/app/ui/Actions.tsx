@@ -19,7 +19,7 @@ const BASESCAN = "https://sepolia.basescan.org/tx/";
 
 const BUTTONS: { action: Action; title: string; blurb: string; tone?: "primary" | "danger" }[] = [
   { action: "pay", title: "Buy a report", blurb: "A customer agent asks Chainlink, then pays 0.50 tUSDM", tone: "primary" },
-  { action: "tamper", title: "Try a tampered payment", blurb: "Same request, money redirected — watch it get blocked", tone: "danger" },
+  { action: "tamper", title: "Try a tampered payment", blurb: "Redirect the money away from the backer — Chainlink should block it", tone: "danger" },
   { action: "distribute", title: "Split to the investor", blurb: "Release what the contract is holding" },
   { action: "rate", title: "Refresh the rating", blurb: "Chainlink re-reads earnings and probes Atlas" },
 ];
@@ -94,6 +94,46 @@ function toSteps(action: Action, lines: string[], done: boolean): Step[] {
   if (tx) steps[2] = { ...steps[2]!, state: "done", note: `score ${score}`, href: BASESCAN + tx, hash: tx };
   else if (/Rating unchanged/.test(text)) steps[2] = { ...steps[2]!, state: "done", note: "unchanged, no write needed" };
   return steps;
+}
+
+/** Says plainly whether the run did what the button promised. A blocked tamper is a success. */
+function Outcome({ action, steps }: { action: Action; steps: Step[] }) {
+  const blocked = steps.some((s) => s.state === "blocked");
+  if (action === "tamper") {
+    return blocked ? (
+      <div className="outcome good">
+        <b>Blocked, exactly as intended.</b>
+        <span>Chainlink spotted that the money was being redirected away from the investor contract, so the buyer paid nothing. This is the protection working.</span>
+      </div>
+    ) : (
+      <div className="outcome bad">
+        <b>The tampered payment was not blocked.</b>
+        <span>That should not happen. Check the payment gate's policy.</span>
+      </div>
+    );
+  }
+  if (blocked) {
+    return (
+      <div className="outcome warn">
+        <b>Chainlink did not approve this payment, so nothing was paid.</b>
+        <span>The buyer keeps its money whenever a check does not pass.</span>
+      </div>
+    );
+  }
+  const title =
+    action === "pay" ? "Payment complete." : action === "distribute" ? "Split complete." : "Rating refreshed.";
+  const body =
+    action === "pay"
+      ? "Chainlink approved it, the money went into the investor contract, and the report was delivered."
+      : action === "distribute"
+        ? "The contract released the money and paid the backer their share first."
+        : "Chainlink re-read Atlas's earnings, probed its service and recorded the score on Base Sepolia.";
+  return (
+    <div className="outcome good">
+      <b>{title}</b>
+      <span>{body}</span>
+    </div>
+  );
 }
 
 export function Actions({ enabled, videoUrl }: { enabled: boolean; videoUrl?: string }) {
@@ -256,6 +296,8 @@ export function Actions({ enabled, videoUrl }: { enabled: boolean; videoUrl?: st
       )}
 
       {note && <div className="action-note">{note}</div>}
+
+      {steps.length > 0 && done && action && <Outcome action={action} steps={steps} />}
 
       {steps.length > 0 && (
         <>

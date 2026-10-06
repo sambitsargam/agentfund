@@ -1523,3 +1523,41 @@ a {
     display: none;
   }
 }
+
+.outcome {
+  margin-top: 18px;
+  padding: 13px 16px;
+  border-radius: 11px;
+  border-left: 3px solid var(--line-2);
+  background: var(--panel-2);
+}
+.outcome b {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+.outcome span {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.outcome.good {
+  border-left-color: var(--teal);
+  background: var(--teal-dim);
+}
+.outcome.good b {
+  color: var(--teal);
+}
+.outcome.warn {
+  border-left-color: var(--amber);
+  background: var(--amber-dim);
+}
+.outcome.warn b {
+  color: var(--amber);
+}
+.outcome.bad {
+  border-left-color: var(--red);
+  background: var(--red-dim);
+}
+.outcome.bad b {
+  color: var(--red);
+}
