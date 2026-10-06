@@ -1994,10 +1994,195 @@ a {
 }
 
 /* Funding is a focused wallet journey; evidence remains below it. */
-.fund-wallet,.fund-buttons{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}
-.fund-wallet select,.fund-fields input{font:inherit;padding:10px;border:1px solid #c8c8c8;border-radius:8px;background:transparent;color:inherit;max-width:100%}
-.fund-cards{display:grid;gap:16px;margin:24px 0}.fund-cards .panel{padding:24px}
-.fund-facts{display:flex;gap:24px;flex-wrap:wrap;margin:20px 0}.fund-facts dt{font-size:12px;opacity:.65}.fund-facts dd{margin:5px 0;font-weight:650}
-.fund-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}.fund-fields label{display:grid;gap:8px}
-.fund-message,.fund-review{padding:18px;border:1px solid #8b9cbd;border-radius:12px;margin:18px 0}.fund-review .mono,.fund-url{overflow-wrap:anywhere;word-break:break-word}.fund-url{display:block;padding:12px;background:#8881}
-@media(max-width:640px){.fund-fields{grid-template-columns:1fr}.fund-facts{gap:16px}.fund-cards .panel{padding:16px}}
+/* Fund an agent: wallet connection, proposal review and round cards */
+.fund-wallet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.fund-wallet label {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.fund-wallet select,
+.fund-fields input {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--bg-2);
+  color: var(--text);
+  max-width: 100%;
+}
+.fund-wallet select:focus-visible,
+.fund-fields input:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.fund-wallet select:disabled {
+  color: var(--text-3);
+}
+/* Connected identity reads as a state, not another control. */
+.fund-connected {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--teal-dim);
+  border-radius: 999px;
+  background: rgba(61, 220, 151, 0.08);
+  color: var(--teal);
+  font-size: 12.5px;
+}
+.fund-connected i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.fund-wallet .spacer {
+  margin-left: auto;
+}
+.fund-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0 0;
+}
+.fund-buttons a {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.fund-cards {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0;
+}
+.fund-cards .panel {
+  padding: 18px 20px;
+}
+.fund-cards .sec-head {
+  align-items: center;
+  margin-bottom: 4px;
+}
+.fund-cards .sec-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.fund-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  margin: 14px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--line);
+  overflow: hidden;
+}
+.fund-facts > div {
+  padding: 10px 12px;
+  background: var(--bg);
+}
+.fund-facts dt {
+  color: var(--text-3);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.fund-facts dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fund-message {
+  margin: 14px 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text-2);
+  font-size: 13px;
+}
+/* The review step is the last point before a wallet signature, so it is marked out. */
+.fund-review {
+  margin: 16px 0;
+  padding: 18px 20px;
+  border-color: rgba(233, 185, 73, 0.4);
+  background: linear-gradient(
+    180deg,
+    rgba(233, 185, 73, 0.07),
+    transparent 70%
+  );
+}
+.fund-review h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+.fund-review p {
+  margin: 6px 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.fund-review .mono,
+.fund-url {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.fund-url {
+  display: block;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-size: 12px;
+}
+.fund-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+.fund-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.funding-product > details.panel {
+  padding: 14px 18px;
+}
+.funding-product > details.panel summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .fund-fields {
+    grid-template-columns: 1fr;
+  }
+  .fund-wallet {
+    gap: 8px;
+  }
+  .fund-wallet .spacer {
+    margin-left: 0;
+  }
+  .fund-cards .panel {
+    padding: 14px 16px;
+  }
+  /* An odd last stat spans the row rather than leaving a hole beside it. */
+  .fund-facts > div:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
