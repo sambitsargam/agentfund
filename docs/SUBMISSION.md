@@ -21,7 +21,7 @@ over x402. Both pay in tUSDM, and both land in the splitter.
 |                                           |                                                                                                                             |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Repository                                | https://github.com/sambitsargam/agentfund                                                                                   |
-| Live dashboard                            | _(filled in at deploy)_                                                                                                     |
+| Live dashboard                            | https://agentfund-six.vercel.app                                                                                            |
 | Deck (.pptx, Google Drive)                | _(filled in at deploy)_                                                                                                     |
 | Demo video (≤3 min, embedded in the deck) | _(filled in at deploy)_                                                                                                     |
 | Write-up                                  | [docs/WRITEUP.md](WRITEUP.md)                                                                                               |

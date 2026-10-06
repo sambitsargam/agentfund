@@ -92,6 +92,8 @@ The paid Sokosumi Task, its confirmed collection, sweep, and investor payout are
 
 `docs/CHAINLINK_EVIDENCE.md` lists every simulation run with its output; `docs/BUILD_LOG.md` is the full log with the failures and what they taught us.
 
+**Live:** https://agentfund-six.vercel.app
+
 **For judges:** `docs/SUBMISSION.md` collects every identifier, transaction and link on one page, including what we have and have not proven. `docs/JUDGE_QA.md` answers the hard questions directly.
 
 ## Deployed addresses
