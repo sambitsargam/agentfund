@@ -113,3 +113,10 @@ Three rejections before the terms were accepted, each worth recording:
 3. `Submit result time must be before unlock time with at least 15 minutes difference` — Masumi's own minimum. Deadlines are now pay-by 15 min, result 25, unlock 40, dispute 60, validated by `checkDeadlines` so the gap cannot regress.
 
 The first paid Task also expired unfunded: Sokosumi Core charged its 100 credits and funds escrow asynchronously, and the reference's 5-minute pay-by window passed before it paid. The worker now fails a payment that is still unfunded past its signed pay-by time instead of polling it forever.
+
+### Access model: X402 registration does not work for Sokosumi paid Tasks
+Three paid Tasks in the event workspace were charged credits by Core and then **refunded** (`GET /v1/tasks/{id}/receipt` → `claimStatus: REFUNDED`, `onChainState: None`), so escrow was never funded and the signed pay-by time passed. Core accepted the `masumiPayment` event each time; it simply did not fund.
+
+The agent was registered with `type: "X402"` and an `x402ResourcesUrl`. Masumi's own reference implementation registers `type: "Standard"` with an `apiBaseUrl` for exactly this flow, so the access model is the difference: a Sokosumi Task is bought through the Task interface, not through x402 resources. x402 payments need no registry entry at all — the facilitator re-derives the script address from the 402 itself, which is what tx `76abb642…` and the gated payments prove.
+
+Deregistered the X402 agent (`DeregistrationConfirmed`) and re-registered as `Standard` with `apiBaseUrl` pointing at Atlas. `MASUMI_ACCESS_MODEL` selects the model; `Standard` is the default.

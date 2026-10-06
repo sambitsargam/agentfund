@@ -87,11 +87,15 @@ async function register(resourcesUrl: string) {
   if (!source) throw new Error("no Preprod Web3CardanoV2 payment source");
   const wallet = await sellingWallet();
 
+  // Sokosumi Task purchases go through the Standard access model, which is what Masumi's own
+  // reference implementation registers; x402 payments do not need the registry at all, because
+  // the facilitator verifies the script address from the 402 itself.
+  const standard = (process.env.MASUMI_ACCESS_MODEL ?? "Standard") === "Standard";
   const body = {
     network: "Preprod",
-    type: "X402",
+    type: standard ? "Standard" : "X402",
     sellingWalletVkey: wallet.walletVkey,
-    x402ResourcesUrl: resourcesUrl,
+    ...(standard ? { apiBaseUrl: resourcesUrl.replace(/\/\.well-known\/x402\.json$/, "") } : { x402ResourcesUrl: resourcesUrl }),
     supportedPaymentSources: [
       {
         chain: "Cardano",
