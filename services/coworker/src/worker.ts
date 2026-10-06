@@ -10,7 +10,7 @@ export const QUOTE = { amount: "1000000", unit: TUSDM_MASUMI_UNIT }; // 1 tUSDM 
 export interface Registration {
   agentIdentifier: string;
   supportedPaymentSourceIndex: number;
-  sellerWalletId: string;
+  sellingWalletId: string;
   /** Where escrow payouts land: the seller wallet, or the splitter when collection points there. */
   payoutAddress: string;
 }
@@ -103,7 +103,7 @@ export function purchasePayload(p: MpsPayment, nonce: string, reg: Registration)
   if (p.PaymentSource.network !== "Preprod" || p.PaymentSource.paymentSourceType !== "Web3CardanoV2") {
     throw new Error("payment source is not Preprod Web3CardanoV2");
   }
-  if (p.SmartContractWallet.id !== reg.sellerWalletId) throw new Error("signed terms name a different seller wallet");
+  if (p.SmartContractWallet.id !== reg.sellingWalletId) throw new Error("signed terms name a different seller wallet");
   const [funds] = p.RequestedFunds;
   if (p.RequestedFunds.length !== 1 || funds?.unit !== QUOTE.unit || funds.amount !== QUOTE.amount) {
     throw new Error("signed quote differs from 1 tUSDM");
@@ -166,7 +166,9 @@ export class CoworkerWorker {
   async advance(task: CoreTask): Promise<void> {
     let state = this.deps.store.read(task.id);
     if (!state) {
-      if (task.status !== "READY") return;
+      // READY: ours to start. RUNNING with no state: we started it and lost the file, so adopt it
+      // rather than leaving the Task stranded. Anything else is not ours to touch.
+      if (task.status !== "READY" && task.status !== "RUNNING") return;
       state = this.save({
         taskId: task.id,
         input: task.description ?? task.name,
@@ -174,8 +176,12 @@ export class CoworkerWorker {
         paid: this.paidEnabled,
         startedAt: new Date(this.now()).toISOString(),
       });
-      await this.deps.core.post(`/v1/tasks/${task.id}/events`, { status: "RUNNING" });
-      this.deps.log(`task ${task.id}: started (${state.paid ? "paid" : "unpaid"})`);
+      if (task.status === "READY") {
+        await this.deps.core.post(`/v1/tasks/${task.id}/events`, { status: "RUNNING" });
+        this.deps.log(`task ${task.id}: started (${state.paid ? "paid" : "unpaid"})`);
+      } else {
+        this.deps.log(`task ${task.id}: adopted an in-flight Task (${state.paid ? "paid" : "unpaid"})`);
+      }
     }
     // Several steps can complete in one tick; stop when a step is waiting on someone else.
     for (let i = 0; i < 8; i++) {

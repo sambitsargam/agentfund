@@ -6,7 +6,7 @@ import { prepare, sha256 } from "../src/answer.js";
 import { TaskStore } from "../src/store.js";
 import { CoworkerWorker, QUOTE, confirmed, netReceived, purchasePayload, type MpsPayment, type TaskState } from "../src/worker.js";
 
-const reg = { agentIdentifier: "agent", supportedPaymentSourceIndex: 0, sellerWalletId: "w1", payoutAddress: "addr_test1seller" };
+const reg = { agentIdentifier: "agent", supportedPaymentSourceIndex: 0, sellingWalletId: "w1", payoutAddress: "addr_test1seller" };
 const terms = (over: Partial<MpsPayment> = {}): MpsPayment => ({
   blockchainIdentifier: "bid",
   agentIdentifier: "agent",
@@ -84,5 +84,31 @@ describe("unpaid task flow", () => {
     expect(posted[1]).toMatchObject({ status: "COMPLETED" });
     expect(store.read(id)?.stage).toBe("completed");
     expect(store.read(id)?.paid).toBe(false);
+  });
+});
+
+describe("restart safety", () => {
+  it("adopts a RUNNING task whose local state was lost, without re-posting RUNNING", async () => {
+    const posted: unknown[] = [];
+    const core = {
+      get: async () => [],
+      post: async (_p: string, body: unknown) => {
+        posted.push(body);
+        return { id: "evt" };
+      },
+    };
+    const store = new TaskStore<TaskState>(mkdtempSync(join(tmpdir(), "coworker-")));
+    const worker = new CoworkerWorker({ core: core as never, store, blockfrostProjectId: "x", log: () => {} });
+    const id = "01a11029-b431-74cd-945c-fac56d1fe53f";
+    await worker.advance({ id, status: "RUNNING", name: "check", description: "is this safe?" });
+    expect(posted.some((p) => (p as { status?: string }).status === "RUNNING")).toBe(false);
+    expect(store.read(id)).toBeDefined();
+  });
+
+  it("ignores tasks in any other state", async () => {
+    const store = new TaskStore<TaskState>(mkdtempSync(join(tmpdir(), "coworker-")));
+    const worker = new CoworkerWorker({ core: { get: async () => [], post: async () => ({ id: "e" }) } as never, store, blockfrostProjectId: "x", log: () => {} });
+    await worker.advance({ id: "01a11029-0000-74cd-945c-fac56d1fe53f", status: "COMPLETED", name: "n", description: "d" });
+    expect(store.all()).toHaveLength(0);
   });
 });
