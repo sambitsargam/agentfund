@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "distribute": "tsx src/main.ts",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "sweep": "tsx src/sweep.ts"
   },
   "dependencies": {
     "@agentfund/cardano-tx": "0.1.0",

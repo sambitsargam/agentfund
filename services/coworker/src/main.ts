@@ -37,6 +37,19 @@ app.get("/health", (_req, res) => {
   const stale = !worker.lastPollAt || Date.now() - Date.parse(worker.lastPollAt) > 60_000;
   res.status(stale ? 503 : 200).json({ ok: !stale, lastPollAt: worker.lastPollAt, paidTasks: worker.paidEnabled });
 });
+// Public identity, so the dashboard can show where Atlas is registered.
+app.get("/agent", (_req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  const reg = existsSync(registrationFile) ? (JSON.parse(readFileSync(registrationFile, "utf8")) as Record<string, unknown>) : undefined;
+  res.json({
+    coworkerId: process.env.SOKOSUMI_COWORKER_ID ?? null,
+    masumi: reg
+      ? { state: reg.state ?? null, agentIdentifier: reg.agentIdentifier ?? null, x402ResourcesUrl: reg.x402ResourcesUrl ?? null }
+      : null,
+    paidTasks: worker.paidEnabled,
+  });
+});
+
 // Public progress feed for the dashboard. Task inputs and results stay private.
 app.get("/tasks", (_req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
