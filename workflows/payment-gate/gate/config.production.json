@@ -7,8 +7,20 @@
   "gasLimit": "500000",
   "blockfrostSecretId": "blockfrost_project_id",
   "auditors": [
-    { "name": "offer-integrity", "provider": "mock", "url": "http://127.0.0.1:8787/v1/chat/completions/allow", "model": "mock", "secretId": "auditor_a_key" },
-    { "name": "report-quality", "provider": "mock", "url": "http://127.0.0.1:8787/v1/chat/completions/allow", "model": "mock", "secretId": "auditor_b_key" }
+    {
+      "name": "offer-integrity",
+      "provider": "openai",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "model": "gpt-4.1-mini",
+      "secretId": "auditor_a_key"
+    },
+    {
+      "name": "report-quality",
+      "provider": "openai",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "model": "gpt-4o-mini",
+      "secretId": "auditor_b_key"
+    }
   ],
   "policy": {
     "splitterAddress": "addr_test1wzyukctzs3agkmx9gt85dp2ftu9622k8926qh7kjhlw3z8s7w0h96",

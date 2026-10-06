@@ -30,10 +30,12 @@ export const OFFER_AUDIT = (facts: unknown, policy: GatePolicy) =>
 
 export const REPORT_AUDIT = (sampleReport: string) =>
   JSON.stringify({
-    task: "Judge whether this seller's recent report is genuine, useful work worth paying for.",
+    task: "Judge the quality of the seller's work: is this recent report genuine, useful work worth paying for?",
     rules: [
+      "You are grading the seller (the report's author), not the wallet the report is about.",
+      "A report that finds the checked wallet risky is still good work if its verdict follows from its facts.",
       "A good report states a clear verdict, concrete facts, its method and its sources.",
-      "Deny if it looks fabricated, empty or inconsistent with its own sources.",
+      "Deny only if the report looks fabricated, empty or inconsistent with its own facts and sources.",
     ],
     sampleReport: sampleReport.slice(0, 12_000),
   });

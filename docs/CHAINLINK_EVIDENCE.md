@@ -36,4 +36,10 @@ Read back with `getDecision(bytes32)`: run 1 `(atlas, 1, 0, 385, 1791259461)`, r
 | 3 | buyer agent, genuine, request `0xd5cefbdb…e495` | mock: allow, allow | **ALLOW**, rating 385; buyer then paid on Cardano [`3efa54df…59ba`](https://preprod.cardanoscan.io/transaction/3efa54df70e619e349db20ce5e925ebdb6c771e76131bfd485071dac871d59ba) with the request id in its datum | [`0x95bd73aa0c306b64294145e27908c9758f77deb166d38313021ea1ce2ff43a5a`](https://sepolia.basescan.org/tx/0x95bd73aa0c306b64294145e27908c9758f77deb166d38313021ea1ce2ff43a5a) |
 | 4 | buyer agent `--tamper`, request `0xfc01bda4…7302` | not called | **DENY**, flags 1; buyer did not pay | [`0xc625f8ae1158732948d79b209f64331efa8b087dba5fa86985725883f07aba39`](https://sepolia.basescan.org/tx/0xc625f8ae1158732948d79b209f64331efa8b087dba5fa86985725883f07aba39) |
 
-**Open:** these runs used the local mock auditors. The allow and deny cases will be re-run with real LLM keys once they are available.
+### With real LLM auditors (OpenAI: offer integrity on `gpt-4.1-mini`, report quality on `gpt-4o-mini`)
+
+| Run | Proposal | Decision | Tx |
+| --- | --- | --- | --- |
+| 5 | genuine, request `0x1fc2fcd0…` | **REVIEW**, flags 256 (`auditorUnsure`): the report-quality auditor graded the checked wallet instead of the seller's work; buyer did not pay. Prompt clarified afterwards. | [`0x9ecccecc14d7eccc1d0381c72945ea43defe0d6ec21a3efd817c902933a07104`](https://sepolia.basescan.org/tx/0x9ecccecc14d7eccc1d0381c72945ea43defe0d6ec21a3efd817c902933a07104) |
+| 6 | genuine, request `0x8a0870b5…` | **ALLOW**, flags 0 (auditors allow/95, allow/85); buyer paid [`f06f7e3e…ff1f`](https://preprod.cardanoscan.io/transaction/f06f7e3e69ca2824cdb071022f4e443b51487d85f9a81a94d412e19f9699ff1f) in 28.1 s | [`0x40c7db9914c310aa23a83b6594ed72e1073db65742de6dc79096a0ce2a793373`](https://sepolia.basescan.org/tx/0x40c7db9914c310aa23a83b6594ed72e1073db65742de6dc79096a0ce2a793373) |
+| 7 | tampered payTo, request `0x2f1578fe…` | **DENY**, flags 1; auditors not called; buyer did not pay | [`0x6ac84adaafbc31f5cdec5073904970236574c41be8eef539dd28ce9c19868925`](https://sepolia.basescan.org/tx/0x6ac84adaafbc31f5cdec5073904970236574c41be8eef539dd28ce9c19868925) |
