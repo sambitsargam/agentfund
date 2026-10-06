@@ -6,7 +6,8 @@
   "scripts": {
     "start": "tsx src/main.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "register": "tsx src/register.ts"
   },
   "dependencies": {
     "@agentfund/shared": "0.1.0",
