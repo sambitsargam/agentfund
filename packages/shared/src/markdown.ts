@@ -18,7 +18,11 @@ export function renderReportMarkdown(r: Report): string {
   const lines: string[] = [];
 
   lines.push(`**${VERDICT_LABEL[r.score.verdict]} (${r.score.risk}/100)** · ${r.score.headline}`, "");
-  const label = s.handle ? `${s.handle} → ${short(s.address)}` : short(s.address);
+  const label = s.handle
+    ? `${s.handle} → ${short(s.address)}`
+    : s.kind === "stake-address" && s.stakeAddress
+      ? `${short(s.stakeAddress)} (stake address) → ${short(s.address)}`
+      : short(s.address);
   lines.push(`Checked: [${label}](${cardanoscan.address(s.address)}) on Cardano preprod, ${r.generatedAt.replace("T", " ").slice(0, 16)} UTC`, "");
 
   lines.push("### Key facts", "");
