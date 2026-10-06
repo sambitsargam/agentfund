@@ -5,6 +5,18 @@ import { answer, prepare, sha256 } from "./answer.js";
 import { TaskStore } from "./store.js";
 
 const MINUTE = 60_000;
+
+/**
+ * Preprod deadlines, in minutes from when terms are signed. The buyer is Sokosumi Core, which
+ * funds escrow asynchronously; a 5-minute window expired before it paid, so `payBy` is generous.
+ * `unlock` is what gates collection, so it stays as early as the other deadlines allow.
+ */
+export const DEADLINES = {
+  payBy: Number(process.env.MASUMI_PAY_BY_MINUTES ?? 15),
+  submitResult: Number(process.env.MASUMI_RESULT_MINUTES ?? 35),
+  unlock: Number(process.env.MASUMI_UNLOCK_MINUTES ?? 45),
+  dispute: Number(process.env.MASUMI_DISPUTE_MINUTES ?? 65),
+};
 export const QUOTE = { amount: "1000000", unit: TUSDM_MASUMI_UNIT }; // 1 tUSDM per check
 
 export interface Registration {
@@ -214,10 +226,10 @@ export class CoworkerWorker {
           inputHash: sha256(s.input),
           identifierFromPurchaser: nonce,
           RequestedFunds: [QUOTE],
-          payByTime: new Date(now + 5 * MINUTE).toISOString(),
-          submitResultTime: new Date(now + 20 * MINUTE).toISOString(),
-          unlockTime: new Date(now + 36 * MINUTE).toISOString(),
-          externalDisputeUnlockTime: new Date(now + 52 * MINUTE).toISOString(),
+          payByTime: new Date(now + DEADLINES.payBy * MINUTE).toISOString(),
+          submitResultTime: new Date(now + DEADLINES.submitResult * MINUTE).toISOString(),
+          unlockTime: new Date(now + DEADLINES.unlock * MINUTE).toISOString(),
+          externalDisputeUnlockTime: new Date(now + DEADLINES.dispute * MINUTE).toISOString(),
           metadata: JSON.stringify({ taskId: s.taskId }),
         };
         this.save({ ...s, stage: "terms-pending", nonce });
@@ -236,7 +248,14 @@ export class CoworkerWorker {
       }
       case "awaiting-escrow": {
         const observed = await this.observe(s);
-        if (observed.onChainState !== "FundsLocked" || !confirmed(observed, "FundsLocked")) return this.save({ ...s, onChainState: observed.onChainState ?? undefined });
+        if (observed.onChainState !== "FundsLocked" || !confirmed(observed, "FundsLocked")) {
+          // Past the signed pay-by time with nothing locked: the buyer never funded it, and no
+          // later payment can satisfy these terms. Stop rather than poll a dead payment forever.
+          if (this.now() >= Number(s.terms!.payByTime) && !observed.onChainState) {
+            return this.fail(s, "the buyer did not fund escrow before the signed pay-by time");
+          }
+          return this.save({ ...s, onChainState: observed.onChainState ?? undefined });
+        }
         if (this.now() >= Number(s.terms!.submitResultTime)) return this.fail(s, "result deadline passed before escrow confirmed");
         const prepared = prepare(s.input);
         const a = prepared.ok ? await answer(prepared.subject, this.deps.blockfrostProjectId) : { markdown: prepared.markdown, delivered: false };
