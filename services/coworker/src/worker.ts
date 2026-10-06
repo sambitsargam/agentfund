@@ -11,22 +11,33 @@ const MINUTE = 60_000;
  * funds escrow asynchronously; a 5-minute window expired before it paid, so `payBy` is generous.
  * `unlock` is what gates collection, so it stays as early as the other deadlines allow.
  */
+/**
+ * Measured on preprod: the buyer locks funds around eight minutes in, Atlas produces the
+ * report in about one, and the payment service then takes up to ten more minutes to get the
+ * result hash confirmed and noticed, because it batches and its chain sync advances in bursts.
+ * A 25-minute result deadline left only 6.5 minutes of slack; one slow batch loses the Task
+ * and refunds the buyer. These values trade a slower collection for that margin.
+ */
 export const DEADLINES = {
   payBy: Number(process.env.MASUMI_PAY_BY_MINUTES ?? 15),
-  submitResult: Number(process.env.MASUMI_RESULT_MINUTES ?? 25),
-  unlock: Number(process.env.MASUMI_UNLOCK_MINUTES ?? 40),
-  dispute: Number(process.env.MASUMI_DISPUTE_MINUTES ?? 60),
+  submitResult: Number(process.env.MASUMI_RESULT_MINUTES ?? 40),
+  unlock: Number(process.env.MASUMI_UNLOCK_MINUTES ?? 55),
+  dispute: Number(process.env.MASUMI_DISPUTE_MINUTES ?? 75),
 };
 
 /** Masumi's own minimum: unlock must be at least 15 minutes after the result deadline. */
 export const MIN_UNLOCK_GAP = 15;
 
 export function checkDeadlines(d: typeof DEADLINES = DEADLINES): void {
-  if (!(d.payBy < d.submitResult)) throw new Error("pay-by must come before the result deadline");
+  if (!(d.payBy < d.submitResult))
+    throw new Error("pay-by must come before the result deadline");
   if (d.unlock - d.submitResult < MIN_UNLOCK_GAP) {
-    throw new Error(`unlock must be at least ${MIN_UNLOCK_GAP} minutes after the result deadline`);
+    throw new Error(
+      `unlock must be at least ${MIN_UNLOCK_GAP} minutes after the result deadline`,
+    );
   }
-  if (!(d.dispute > d.unlock)) throw new Error("the dispute deadline must come after unlock");
+  if (!(d.dispute > d.unlock))
+    throw new Error("the dispute deadline must come after unlock");
 }
 export const QUOTE = { amount: "1000000", unit: TUSDM_MASUMI_UNIT }; // 1 tUSDM per check
 
@@ -92,8 +103,17 @@ export interface MpsPayment {
   onChainState?: string | null;
   resultHash?: string | null;
   RequestedFunds: { amount: string; unit: string }[];
-  PaymentSource: { network: string; paymentSourceType: string; smartContractAddress: string; policyId: string };
-  SmartContractWallet: { id: string; walletVkey: string; walletAddress?: string };
+  PaymentSource: {
+    network: string;
+    paymentSourceType: string;
+    smartContractAddress: string;
+    policyId: string;
+  };
+  SmartContractWallet: {
+    id: string;
+    walletVkey: string;
+    walletAddress?: string;
+  };
   CurrentTransaction?: MpsTx | null;
   TransactionHistory?: MpsTx[];
 }
@@ -113,22 +133,38 @@ interface CoreTask {
   assigneeId?: string;
 }
 
-export function confirmed(p: Pick<MpsPayment, "CurrentTransaction" | "TransactionHistory">, state: string): boolean {
-  const ok = (t?: MpsTx | null) => t?.status === "Confirmed" && t.newOnChainState === state;
+export function confirmed(
+  p: Pick<MpsPayment, "CurrentTransaction" | "TransactionHistory">,
+  state: string,
+): boolean {
+  const ok = (t?: MpsTx | null) =>
+    t?.status === "Confirmed" && t.newOnChainState === state;
   return ok(p.CurrentTransaction) || (p.TransactionHistory ?? []).some(ok);
 }
 
 /** The buyer-side purchase request Core relays to Masumi; every signed field is passed through unchanged. */
-export function purchasePayload(p: MpsPayment, nonce: string, reg: Registration) {
+export function purchasePayload(
+  p: MpsPayment,
+  nonce: string,
+  reg: Registration,
+) {
   if (p.sellerReturnAddress != null || p.forceLayer != null) {
     throw new Error("signed terms carry overrides Core cannot preserve");
   }
-  if (p.PaymentSource.network !== "Preprod" || p.PaymentSource.paymentSourceType !== "Web3CardanoV2") {
+  if (
+    p.PaymentSource.network !== "Preprod" ||
+    p.PaymentSource.paymentSourceType !== "Web3CardanoV2"
+  ) {
     throw new Error("payment source is not Preprod Web3CardanoV2");
   }
-  if (p.SmartContractWallet.id !== reg.sellingWalletId) throw new Error("signed terms name a different seller wallet");
+  if (p.SmartContractWallet.id !== reg.sellingWalletId)
+    throw new Error("signed terms name a different seller wallet");
   const [funds] = p.RequestedFunds;
-  if (p.RequestedFunds.length !== 1 || funds?.unit !== QUOTE.unit || funds.amount !== QUOTE.amount) {
+  if (
+    p.RequestedFunds.length !== 1 ||
+    funds?.unit !== QUOTE.unit ||
+    funds.amount !== QUOTE.amount
+  ) {
     throw new Error("signed quote differs from 1 tUSDM");
   }
   return {
@@ -144,7 +180,11 @@ export function purchasePayload(p: MpsPayment, nonce: string, reg: Registration)
     paymentSourceType: "Web3CardanoV2",
     supportedPaymentSourceIndex: reg.supportedPaymentSourceIndex,
     Amounts: p.RequestedFunds.map(({ amount, unit }) => ({ amount, unit })),
-    PaymentSource: { network: "Preprod", smartContractAddress: p.PaymentSource.smartContractAddress, policyId: p.PaymentSource.policyId },
+    PaymentSource: {
+      network: "Preprod",
+      smartContractAddress: p.PaymentSource.smartContractAddress,
+      policyId: p.PaymentSource.policyId,
+    },
   };
 }
 
@@ -185,7 +225,10 @@ export class CoworkerWorker {
   }
 
   private save(state: TaskState): TaskState {
-    return this.deps.store.write(state.taskId, { ...state, updatedAt: new Date(this.now()).toISOString() });
+    return this.deps.store.write(state.taskId, {
+      ...state,
+      updatedAt: new Date(this.now()).toISOString(),
+    });
   }
 
   async advance(task: CoreTask): Promise<void> {
@@ -202,14 +245,23 @@ export class CoworkerWorker {
         startedAt: new Date(this.now()).toISOString(),
       });
       if (task.status === "RUNNING" && state.paid) {
-        this.fail(state, "local state is missing for a paid RUNNING Task; inspect existing payment events before resuming");
+        this.fail(
+          state,
+          "local state is missing for a paid RUNNING Task; inspect existing payment events before resuming",
+        );
         return;
       }
       if (task.status === "READY") {
-        await this.deps.core.post(`/v1/tasks/${task.id}/events`, { status: "RUNNING" });
-        this.deps.log(`task ${task.id}: started (${state.paid ? "paid" : "unpaid"})`);
+        await this.deps.core.post(`/v1/tasks/${task.id}/events`, {
+          status: "RUNNING",
+        });
+        this.deps.log(
+          `task ${task.id}: started (${state.paid ? "paid" : "unpaid"})`,
+        );
       } else {
-        this.deps.log(`task ${task.id}: adopted an in-flight Task (${state.paid ? "paid" : "unpaid"})`);
+        this.deps.log(
+          `task ${task.id}: adopted an in-flight Task (${state.paid ? "paid" : "unpaid"})`,
+        );
       }
     }
     // Several steps can complete in one tick; stop when a step is waiting on someone else.
@@ -220,6 +272,15 @@ export class CoworkerWorker {
     }
   }
 
+  /** Progress note for the buyer's thread. Never let a failed comment fail the Task. */
+  private async say(taskId: string, comment: string) {
+    try {
+      await this.deps.core.post(`/v1/tasks/${taskId}/events`, { comment });
+    } catch {
+      /* the buyer loses a status line, not their report */
+    }
+  }
+
   private async step(s: TaskState): Promise<TaskState> {
     const { core, mps, registration } = this.deps;
     switch (s.stage) {
@@ -227,11 +288,27 @@ export class CoworkerWorker {
         const prepared = prepare(s.input);
         if (!prepared.ok) {
           // Nothing to check: explain what to send instead, and do not charge for it.
-          return this.save({ ...s, paid: false, stage: "result-saved", result: prepared.markdown, resultHash: sha256(prepared.markdown), delivered: false });
+          return this.save({
+            ...s,
+            paid: false,
+            stage: "result-saved",
+            result: prepared.markdown,
+            resultHash: sha256(prepared.markdown),
+            delivered: false,
+          });
         }
         if (!s.paid) {
-          const a = await (this.deps.answer ?? answer)(prepared.subject, this.deps.blockfrostProjectId);
-          return this.save({ ...s, stage: "result-saved", result: a.markdown, resultHash: sha256(a.markdown), delivered: a.delivered });
+          const a = await (this.deps.answer ?? answer)(
+            prepared.subject,
+            this.deps.blockfrostProjectId,
+          );
+          return this.save({
+            ...s,
+            stage: "result-saved",
+            result: a.markdown,
+            resultHash: sha256(a.markdown),
+            delivered: a.delivered,
+          });
         }
         checkDeadlines();
         const nonce = randomBytes(10).toString("hex");
@@ -240,14 +317,19 @@ export class CoworkerWorker {
           network: "Preprod",
           agentIdentifier: registration!.agentIdentifier,
           paymentSourceType: "Web3CardanoV2",
-          supportedPaymentSourceIndex: registration!.supportedPaymentSourceIndex,
+          supportedPaymentSourceIndex:
+            registration!.supportedPaymentSourceIndex,
           inputHash: sha256(s.input),
           identifierFromPurchaser: nonce,
           RequestedFunds: [QUOTE],
           payByTime: new Date(now + DEADLINES.payBy * MINUTE).toISOString(),
-          submitResultTime: new Date(now + DEADLINES.submitResult * MINUTE).toISOString(),
+          submitResultTime: new Date(
+            now + DEADLINES.submitResult * MINUTE,
+          ).toISOString(),
           unlockTime: new Date(now + DEADLINES.unlock * MINUTE).toISOString(),
-          externalDisputeUnlockTime: new Date(now + DEADLINES.dispute * MINUTE).toISOString(),
+          externalDisputeUnlockTime: new Date(
+            now + DEADLINES.dispute * MINUTE,
+          ).toISOString(),
           metadata: JSON.stringify({ taskId: s.taskId }),
         };
         this.save({ ...s, stage: "terms-pending", nonce });
@@ -256,63 +338,146 @@ export class CoworkerWorker {
       }
       case "terms": {
         const payload = purchasePayload(s.terms!, s.nonce!, registration!);
-        if (this.now() >= Number(s.terms!.payByTime)) return this.fail(s, "signed payment deadline passed before the purchase was sent");
+        if (this.now() >= Number(s.terms!.payByTime))
+          return this.fail(
+            s,
+            "signed payment deadline passed before the purchase was sent",
+          );
         this.save({ ...s, stage: "payment-pending" });
-        const event = await core.post<{ id: string }>(`/v1/tasks/${s.taskId}/events`, {
-          comment: "Atlas will check this address once the 1 tUSDM payment is held in escrow.",
-          masumiPayment: payload,
+        const event = await core.post<{ id: string }>(
+          `/v1/tasks/${s.taskId}/events`,
+          {
+            comment:
+              `Payment terms signed. Masumi escrow is pay-first, so Atlas starts the check the moment your 1 tUSDM is locked — usually within a couple of minutes. ` +
+              `If it is not locked by ${new Date(Number(s.terms!.payByTime)).toISOString().slice(11, 16)} UTC these terms expire and you are not charged. ` +
+              `After that: the report is delivered within ${DEADLINES.submitResult - DEADLINES.payBy} minutes, and the payment is released to Atlas about ${DEADLINES.unlock} minutes from now.`,
+            masumiPayment: payload,
+          },
+        );
+        return this.save({
+          ...s,
+          stage: "awaiting-escrow",
+          purchaseEventId: event.id,
         });
-        return this.save({ ...s, stage: "awaiting-escrow", purchaseEventId: event.id });
       }
       case "awaiting-escrow": {
         const observed = await this.observe(s);
-        if (observed.onChainState !== "FundsLocked" || !confirmed(observed, "FundsLocked")) {
+        if (
+          observed.onChainState !== "FundsLocked" ||
+          !confirmed(observed, "FundsLocked")
+        ) {
           // Past the signed pay-by time with nothing locked: the buyer never funded it, and no
           // later payment can satisfy these terms. Stop rather than poll a dead payment forever.
-          if (this.now() >= Number(s.terms!.payByTime) && !observed.onChainState) {
-            return this.fail(s, "the buyer did not fund escrow before the signed pay-by time");
+          if (
+            this.now() >= Number(s.terms!.payByTime) &&
+            !observed.onChainState
+          ) {
+            return this.fail(
+              s,
+              "the buyer did not fund escrow before the signed pay-by time",
+            );
           }
-          return this.save({ ...s, onChainState: observed.onChainState ?? undefined });
+          return this.save({
+            ...s,
+            onChainState: observed.onChainState ?? undefined,
+          });
         }
-        if (this.now() >= Number(s.terms!.submitResultTime)) return this.fail(s, "result deadline passed before escrow confirmed");
+        if (this.now() >= Number(s.terms!.submitResultTime))
+          return this.fail(s, "result deadline passed before escrow confirmed");
+        await this.say(
+          s.taskId,
+          "Payment is locked in escrow. Atlas is reading this address on Cardano now — the report follows in a minute or two.",
+        );
         const prepared = prepare(s.input);
-        const a = prepared.ok ? await (this.deps.answer ?? answer)(prepared.subject, this.deps.blockfrostProjectId) : { markdown: prepared.markdown, delivered: false };
-        return this.save({ ...s, stage: "result-saved", onChainState: "FundsLocked", result: a.markdown, resultHash: sha256(a.markdown), delivered: a.delivered });
+        const a = prepared.ok
+          ? await (this.deps.answer ?? answer)(
+              prepared.subject,
+              this.deps.blockfrostProjectId,
+            )
+          : { markdown: prepared.markdown, delivered: false };
+        return this.save({
+          ...s,
+          stage: "result-saved",
+          onChainState: "FundsLocked",
+          result: a.markdown,
+          resultHash: sha256(a.markdown),
+          delivered: a.delivered,
+        });
       }
       case "result-saved": {
         if (!s.paid) return this.save({ ...s, stage: "complete-ready" });
-        if (this.now() >= Number(s.terms!.submitResultTime)) return this.fail(s, "result deadline passed before submission");
+        if (this.now() >= Number(s.terms!.submitResultTime))
+          return this.fail(s, "result deadline passed before submission");
         this.save({ ...s, stage: "submit-pending" });
         await mps!.post("/api/v1/payment/submit-result", {
           network: "Preprod",
           blockchainIdentifier: s.terms!.blockchainIdentifier,
           submitResultHash: s.resultHash,
         });
+        const unlock = new Date(Number(s.terms!.unlockTime))
+          .toISOString()
+          .slice(11, 16);
+        await this.say(
+          s.taskId,
+          `Report is ready and its fingerprint is now recorded on Cardano, which is what releases the escrow. ` +
+            `Posting the full report here as soon as that transaction confirms, usually a few minutes. ` +
+            `The payment itself unlocks to Atlas at ${unlock} UTC.`,
+        );
         return this.save({ ...s, stage: "awaiting-result" });
       }
       case "awaiting-result": {
         const observed = await this.observe(s);
-        const done = observed.onChainState === "ResultSubmitted" && observed.resultHash === s.resultHash && confirmed(observed, "ResultSubmitted");
-        return this.save({ ...s, onChainState: observed.onChainState ?? undefined, ...(done ? { stage: "complete-ready" as const } : {}) });
+        const done =
+          observed.onChainState === "ResultSubmitted" &&
+          observed.resultHash === s.resultHash &&
+          confirmed(observed, "ResultSubmitted");
+        return this.save({
+          ...s,
+          onChainState: observed.onChainState ?? undefined,
+          ...(done ? { stage: "complete-ready" as const } : {}),
+        });
       }
       case "complete-ready": {
         this.save({ ...s, stage: "complete-pending" });
-        const event = await core.post<{ id: string }>(`/v1/tasks/${s.taskId}/events`, { status: "COMPLETED", comment: s.result });
+        const event = await core.post<{ id: string }>(
+          `/v1/tasks/${s.taskId}/events`,
+          { status: "COMPLETED", comment: s.result },
+        );
         this.deps.log(`task ${s.taskId}: completed`);
-        return this.save({ ...s, stage: s.paid ? "awaiting-withdrawal" : "completed", completionEventId: event.id });
+        return this.save({
+          ...s,
+          stage: s.paid ? "awaiting-withdrawal" : "completed",
+          completionEventId: event.id,
+        });
       }
       case "awaiting-withdrawal": {
         const observed = await this.observe(s);
-        if (!["Withdrawn", "DisputedWithdrawn"].includes(observed.onChainState ?? "")) return this.save({ ...s, onChainState: observed.onChainState ?? undefined });
+        if (
+          !["Withdrawn", "DisputedWithdrawn"].includes(
+            observed.onChainState ?? "",
+          )
+        )
+          return this.save({
+            ...s,
+            onChainState: observed.onChainState ?? undefined,
+          });
         const settlement = await this.verifySettlement(s, observed);
-        return this.save({ ...s, onChainState: observed.onChainState ?? undefined, settlement, ...(settlement.verified ? { stage: "settled" as const } : {}) });
+        return this.save({
+          ...s,
+          onChainState: observed.onChainState ?? undefined,
+          settlement,
+          ...(settlement.verified ? { stage: "settled" as const } : {}),
+        });
       }
       case "terms-pending":
       case "payment-pending":
       case "submit-pending":
       case "complete-pending":
         // The previous run stopped mid-write; its outcome is unknown, so a person checks before anything is retried.
-        return this.fail(s, `interrupted during ${s.stage}; inspect the Task and payment before retrying`);
+        return this.fail(
+          s,
+          `interrupted during ${s.stage}; inspect the Task and payment before retrying`,
+        );
       default:
         return s;
     }
@@ -324,30 +489,69 @@ export class CoworkerWorker {
   }
 
   private async observe(s: TaskState): Promise<MpsPayment> {
-    return this.deps.mps!.post<MpsPayment>("/api/v1/payment/resolve-blockchain-identifier", {
-      network: "Preprod",
-      blockchainIdentifier: s.terms!.blockchainIdentifier,
-      includeHistory: "true",
-    });
+    return this.deps.mps!.post<MpsPayment>(
+      "/api/v1/payment/resolve-blockchain-identifier",
+      {
+        network: "Preprod",
+        blockchainIdentifier: s.terms!.blockchainIdentifier,
+        includeHistory: "true",
+      },
+    );
   }
 
   /** Seller receipt is proven only by the withdrawal transaction paying the payout address, checked on-chain. */
-  private async verifySettlement(s: TaskState, observed: MpsPayment): Promise<Settlement> {
-    const receipt = await this.deps.core.get<{ settled?: boolean; txHash?: string; blockchainIdentifier?: string }>(`/v1/tasks/${s.taskId}/receipt`);
-    if (!receipt.settled || !receipt.txHash) return { verified: false, reason: "Core receipt not settled yet" };
-    if (receipt.blockchainIdentifier !== observed.blockchainIdentifier) return { verified: false, reason: "receipt names a different payment" };
-    const withdrawal = [observed.CurrentTransaction, ...(observed.TransactionHistory ?? [])].find(
-      (t) => t?.status === "Confirmed" && ["Withdrawn", "DisputedWithdrawn"].includes(t.newOnChainState ?? "") && t.txHash === receipt.txHash,
+  private async verifySettlement(
+    s: TaskState,
+    observed: MpsPayment,
+  ): Promise<Settlement> {
+    const receipt = await this.deps.core.get<{
+      settled?: boolean;
+      txHash?: string;
+      blockchainIdentifier?: string;
+    }>(`/v1/tasks/${s.taskId}/receipt`);
+    if (!receipt.settled || !receipt.txHash)
+      return { verified: false, reason: "Core receipt not settled yet" };
+    if (receipt.blockchainIdentifier !== observed.blockchainIdentifier)
+      return { verified: false, reason: "receipt names a different payment" };
+    const withdrawal = [
+      observed.CurrentTransaction,
+      ...(observed.TransactionHistory ?? []),
+    ].find(
+      (t) =>
+        t?.status === "Confirmed" &&
+        ["Withdrawn", "DisputedWithdrawn"].includes(t.newOnChainState ?? "") &&
+        t.txHash === receipt.txHash,
     );
-    if (!withdrawal) return { verified: false, txHash: receipt.txHash, reason: "MPS has not confirmed this withdrawal" };
-    const res = await fetch(`https://cardano-preprod.blockfrost.io/api/v0/txs/${receipt.txHash}/utxos`, {
-      headers: { project_id: this.deps.blockfrostProjectId },
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!res.ok) return { verified: false, txHash: receipt.txHash, reason: `Blockfrost ${res.status}` };
+    if (!withdrawal)
+      return {
+        verified: false,
+        txHash: receipt.txHash,
+        reason: "MPS has not confirmed this withdrawal",
+      };
+    const res = await fetch(
+      `https://cardano-preprod.blockfrost.io/api/v0/txs/${receipt.txHash}/utxos`,
+      {
+        headers: { project_id: this.deps.blockfrostProjectId },
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+    if (!res.ok)
+      return {
+        verified: false,
+        txHash: receipt.txHash,
+        reason: `Blockfrost ${res.status}`,
+      };
     const utxos = (await res.json()) as { inputs: Io[]; outputs: Io[] };
-    const net = netReceived(utxos, this.deps.registration!.payoutAddress, QUOTE.unit);
-    return { verified: net > 0n, txHash: receipt.txHash, netAtomicUnits: net.toString() };
+    const net = netReceived(
+      utxos,
+      this.deps.registration!.payoutAddress,
+      QUOTE.unit,
+    );
+    return {
+      verified: net > 0n,
+      txHash: receipt.txHash,
+      netAtomicUnits: net.toString(),
+    };
   }
 }
 
@@ -358,8 +562,21 @@ interface Io {
   reference?: boolean;
 }
 
-export function netReceived(utxos: { inputs: Io[]; outputs: Io[] }, address: string, unit: string): bigint {
+export function netReceived(
+  utxos: { inputs: Io[]; outputs: Io[] },
+  address: string,
+  unit: string,
+): bigint {
   const sum = (ios: Io[]) =>
-    ios.filter((x) => x.address === address && !x.collateral && !x.reference).reduce((t, x) => t + x.amount.filter((a) => a.unit === unit).reduce((n, a) => n + BigInt(a.quantity), 0n), 0n);
+    ios
+      .filter((x) => x.address === address && !x.collateral && !x.reference)
+      .reduce(
+        (t, x) =>
+          t +
+          x.amount
+            .filter((a) => a.unit === unit)
+            .reduce((n, a) => n + BigInt(a.quantity), 0n),
+        0n,
+      );
   return sum(utxos.outputs) - sum(utxos.inputs);
 }
