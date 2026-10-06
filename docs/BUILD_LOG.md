@@ -87,3 +87,8 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
 - Atlas connected to the TOKEN2049 event workspace (organisation `01a109d1-32a9-71a3-a0e3-658b2a7987cd`): access `01a10ffa-17a9-72ae-a1a6-c7e49c552572` is **PENDING** event approval.
 - Rating refreshed to 455 (2 tUSDM over 5 transactions): [`0x3ffd2c9e…b9b7`](https://sepolia.basescan.org/tx/0x3ffd2c9e96cb116361aeaf0ca0f60e27654e0c060a79794f2a9b7b9a391db9b7); `scripts/rating-loop.sh` now refreshes it every 15 minutes so the gate's one-hour freshness rule holds.
 - Decisions: hosting and Masumi registration happen after the build is complete (owner decision); registration will use the hosted HTTPS URL.
+
+### Dashboard
+- Rebuilt as a dark operations console after review: the first version buried the product under an essay-sized headline and its flow diagram was drawn with thick *stroked* curves, which render as lumpy blobs. Sankey ribbons are now closed filled paths, bars keep true proportions, and labels are pushed apart so a small slice (0.1 tUSDM to the investor) still reads clearly beside a large one.
+- Everything on the page is read from the chains: Base Sepolia registry events for ratings and decisions, and splitter transactions on Cardano for payments and splits, joined by the receipt datum's request id. Revalidates every 20 s.
+- 15:01 — second split: 2 coins, Investor A 0.1 tUSDM, Atlas 0.9 tUSDM, block 5259695. Tx [`c8377ab4d1008451c4a90da334708f256c1f33fef78820ce56e1c41db653fd90`](https://preprod.cardanoscan.io/transaction/c8377ab4d1008451c4a90da334708f256c1f33fef78820ce56e1c41db653fd90). Dashboard picked it up automatically: 0.2 tUSDM repaid across 2 splits.

@@ -154,7 +154,7 @@ function requestIdOf(datum: string | null | undefined): string | null {
 }
 
 export async function readCardano(): Promise<CardanoActivity> {
-  const history = (await blockfrost<{ tx_hash: string; block_time: number }[]>(`/addresses/${SPLITTER}/transactions?order=desc&count=50`)) ?? [];
+  const history = (await blockfrost<{ tx_hash: string; block_time: number }[]>(`/addresses/${SPLITTER}/transactions?order=desc&count=30`)) ?? [];
   const txs = await Promise.all(
     history.map(async (h) => ({ ...h, utxos: (await blockfrost<{ inputs: BfIo[]; outputs: BfIo[] }>(`/txs/${h.tx_hash}/utxos`))! })),
   );
