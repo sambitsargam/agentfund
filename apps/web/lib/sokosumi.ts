@@ -1,0 +1,31 @@
+import "server-only";
+
+export interface CoworkerTask {
+  taskId: string;
+  stage: string;
+  paid: boolean;
+  delivered: boolean | null;
+  startedAt: string;
+  updatedAt: string | null;
+  purchaseEventId: string | null;
+  completionEventId: string | null;
+  blockchainIdentifier: string | null;
+  unlockTime: string | null;
+  onChainState: string | null;
+  resultHash: string | null;
+  collectionTx: string | null;
+  collectedAtomicUnits: string | null;
+  error: string | null;
+}
+
+/** Progress feed published by the Coworker worker; null when the worker is not reachable. */
+export async function readCoworkerTasks(): Promise<CoworkerTask[] | null> {
+  const url = process.env.COWORKER_URL;
+  if (!url) return null;
+  try {
+    const res = await fetch(`${url.replace(/\/$/, "")}/tasks`, { next: { revalidate: 20 }, signal: AbortSignal.timeout(8_000) });
+    return res.ok ? ((await res.json()) as CoworkerTask[]) : null;
+  } catch {
+    return null;
+  }
+}

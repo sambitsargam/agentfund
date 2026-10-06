@@ -22,11 +22,12 @@ const registration = existsSync(registrationFile)
   : undefined;
 const mpsToken = process.env.MPS_RUNTIME_TOKEN;
 
+const store = new TaskStore<TaskState>(`${dataDir}/tasks`);
 const worker = new CoworkerWorker({
   core: new CoreClient(required("SOKOSUMI_COWORKER_API_KEY")),
   mps: mpsToken ? new MpsClient(required("MPS_URL"), mpsToken) : undefined,
   registration,
-  store: new TaskStore<TaskState>(`${dataDir}/tasks`),
+  store,
   blockfrostProjectId: required("BLOCKFROST_PROJECT_ID"),
   log: (msg) => console.log(new Date().toISOString(), msg),
 });
@@ -35,6 +36,33 @@ const app = express();
 app.get("/health", (_req, res) => {
   const stale = !worker.lastPollAt || Date.now() - Date.parse(worker.lastPollAt) > 60_000;
   res.status(stale ? 503 : 200).json({ ok: !stale, lastPollAt: worker.lastPollAt, paidTasks: worker.paidEnabled });
+});
+// Public progress feed for the dashboard. Task inputs and results stay private.
+app.get("/tasks", (_req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.json(
+    store
+      .all()
+      .map(({ state: s }) => ({
+        taskId: s.taskId,
+        stage: s.stage,
+        paid: s.paid,
+        delivered: s.delivered ?? null,
+        startedAt: s.startedAt,
+        updatedAt: s.updatedAt ?? null,
+        purchaseEventId: s.purchaseEventId ?? null,
+        completionEventId: s.completionEventId ?? null,
+        blockchainIdentifier: s.terms?.blockchainIdentifier ?? null,
+        submitResultTime: s.terms?.submitResultTime ?? null,
+        unlockTime: s.terms?.unlockTime ?? null,
+        onChainState: s.onChainState ?? null,
+        resultHash: s.resultHash ?? null,
+        collectionTx: s.settlement?.txHash ?? null,
+        collectedAtomicUnits: s.settlement?.netAtomicUnits ?? null,
+        error: s.error ?? null,
+      }))
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
+  );
 });
 app.listen(Number(process.env.PORT ?? process.env.COWORKER_PORT ?? 4030));
 
