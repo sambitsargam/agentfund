@@ -53,3 +53,9 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
   - Tx [`76abb642c411ff657f5a030e94d415468ba0d1123bfe7f6e158894c5bddd7dfb`](https://preprod.cardanoscan.io/transaction/76abb642c411ff657f5a030e94d415468ba0d1123bfe7f6e158894c5bddd7dfb), block 5259156.
 - Two attempts before the second payment failed with `Failed to create payment payload: Blockfrost getUtxos failed` (transient, before signing; nothing spent). The buyer agent retries that step.
 - The x402 SDK spells assets `policy.assetname` (dot); Blockfrost and the ledger use the concatenated unit. Atlas uses `USDM_PREPROD_ASSET` from `@x402/cardano` for the offer.
+
+### First on-chain split (keeper)
+- 12:00 — keeper spent both splitter coins (2 × 0.50 tUSDM) in one transaction, signed by Atlas, fee 0.267642 tADA, `valid_contract: true`, block 5259162.
+  - Investor A received 0.1 tUSDM (+1.18 tADA min-UTxO); Atlas received 0.9 tUSDM; both splitter coins' ADA returned to Atlas as change.
+  - Tx [`075142c03ca67a90de253149cdc0a32f80a0b658463f2879cdca2661e70c6c08`](https://preprod.cardanoscan.io/transaction/075142c03ca67a90de253149cdc0a32f80a0b658463f2879cdca2661e70c6c08)
+- Measured execution units: first input (full split check) mem 303,288 / cpu 111,301,931 (1.7% / 1.1% of the per-tx limit); second input (early return) mem 42,715 / cpu 18,454,819. The test-based estimate was ~3× too high because test units include fixture construction. Cap stays at 8 until a larger batch is measured on-chain.

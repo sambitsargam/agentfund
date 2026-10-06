@@ -1,0 +1,16 @@
+{
+  "name": "@agentfund/keeper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "distribute": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@agentfund/cardano-tx": "0.1.0",
+    "@agentfund/shared": "0.1.0",
+    "@evolution-sdk/evolution": "0.5.16",
+    "dotenv": "16.4.7"
+  }
+}
