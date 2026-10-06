@@ -31,14 +31,21 @@ export interface AtlasDeps {
 }
 
 const subjectOf = (req: Request) => String(req.query.address ?? "").trim();
-const explicitIdOf = (req: Request) => (typeof req.query.requestId === "string" ? req.query.requestId : undefined);
+const explicitIdOf = (req: Request) =>
+  typeof req.query.requestId === "string" ? req.query.requestId : undefined;
 
 export function createApp(deps: AtlasDeps) {
   const now = deps.now ?? (() => new Date());
-  const newChain = deps.chain ?? (() => new ChainClient({ blockfrostProjectId: deps.blockfrostProjectId }));
+  const newChain =
+    deps.chain ??
+    (() => new ChainClient({ blockfrostProjectId: deps.blockfrostProjectId }));
   const resourceServer =
-    deps.resourceServer ?? new x402ResourceServer(new HTTPFacilitatorClient({ url: deps.facilitatorUrl }));
-  if (!deps.resourceServer) resourceServer.register(NETWORK, new ExactCardanoScheme());
+    deps.resourceServer ??
+    new x402ResourceServer(
+      new HTTPFacilitatorClient({ url: deps.facilitatorUrl }),
+    );
+  if (!deps.resourceServer)
+    resourceServer.register(NETWORK, new ExactCardanoScheme());
 
   // A paid request served twice (client retry after settlement) returns the same report.
   const served = new Map<string, Report>();
@@ -47,9 +54,17 @@ export function createApp(deps: AtlasDeps) {
 
   const app = express();
   app.disable("x-powered-by");
+  // Behind a TLS-terminating host, Express otherwise reports http:// and the x402 offer
+  // advertises a resource URL no buyer can reach over the protocol it was served on.
+  app.set("trust proxy", true);
 
   app.get("/health", (_req, res) => {
-    res.json({ ok: true, agent: "atlas", network: NETWORK, splitter: deps.splitter.address });
+    res.json({
+      ok: true,
+      agent: "atlas",
+      network: NETWORK,
+      splitter: deps.splitter.address,
+    });
   });
 
   // Deterministic liveness check for the CRE rating workflow: every node sends the same challenge.
@@ -59,7 +74,12 @@ export function createApp(deps: AtlasDeps) {
       res.status(400).json({ error: "challenge must be 1-64 bytes of hex" });
       return;
     }
-    res.json({ challenge, answer: createHash("sha256").update(Buffer.from(challenge, "hex")).digest("hex") });
+    res.json({
+      challenge,
+      answer: createHash("sha256")
+        .update(Buffer.from(challenge, "hex"))
+        .digest("hex"),
+    });
   });
 
   app.get("/sample", async (_req, res) => {
@@ -70,12 +90,17 @@ export function createApp(deps: AtlasDeps) {
     try {
       // A restarted seller still needs real work for the gate to assess before its first purchase.
       if (!latest) {
-        samplePending ??= buildReport(deps.sampleSubject!, { chain: newChain(), now: Math.floor(now().getTime() / 1000) });
+        samplePending ??= buildReport(deps.sampleSubject!, {
+          chain: newChain(),
+          now: Math.floor(now().getTime() / 1000),
+        });
         latest = await samplePending;
       }
       res.json(latest);
     } catch {
-      res.status(503).json({ error: "sample report data is unavailable; retry shortly" });
+      res
+        .status(503)
+        .json({ error: "sample report data is unavailable; retry shortly" });
     } finally {
       samplePending = undefined;
     }
@@ -88,18 +113,34 @@ export function createApp(deps: AtlasDeps) {
         {
           resource: `${deps.publicUrl}/report`,
           type: "http",
-          description: "Due-diligence report on a Cardano preprod address, stake address or ADA Handle.",
-          price: { amount: REPORT_PRICE, asset: USDM_PREPROD_ASSET, network: NETWORK },
+          description:
+            "Due-diligence report on a Cardano preprod address, stake address or ADA Handle.",
+          price: {
+            amount: REPORT_PRICE,
+            asset: USDM_PREPROD_ASSET,
+            network: NETWORK,
+          },
           payTo: deps.splitter.address,
           inputSchema: {
             type: "object",
             required: ["address"],
             properties: {
-              address: { type: "string", description: "addr_test1…, stake_test1… or $handle" },
-              requestId: { type: "string", description: "Optional 32-byte hex id stored in the payment's receipt datum" },
+              address: {
+                type: "string",
+                description: "addr_test1…, stake_test1… or $handle",
+              },
+              requestId: {
+                type: "string",
+                description:
+                  "Optional 32-byte hex id stored in the payment's receipt datum",
+              },
             },
           },
-          outputSchema: { type: "object", description: "Atlas report: subject, facts, score, crossCheck, method, sources" },
+          outputSchema: {
+            type: "object",
+            description:
+              "Atlas report: subject, facts, score, crossCheck, method, sources",
+          },
         },
       ],
     });
@@ -112,7 +153,10 @@ export function createApp(deps: AtlasDeps) {
       requestIdFor(subjectOf(req), explicitIdOf(req), now());
       next();
     } catch (err) {
-      const message = err instanceof InvalidInputError ? `${err.message} ${err.hint}` : (err as Error).message;
+      const message =
+        err instanceof InvalidInputError
+          ? `${err.message} ${err.hint}`
+          : (err as Error).message;
       res.status(400).json({ error: message });
     }
   });
@@ -130,12 +174,17 @@ export function createApp(deps: AtlasDeps) {
               price: (ctx) => {
                 const params = ctx.adapter.getQueryParams?.() ?? {};
                 const address = String(params.address ?? "");
-                const explicit = typeof params.requestId === "string" ? params.requestId : undefined;
+                const explicit =
+                  typeof params.requestId === "string"
+                    ? params.requestId
+                    : undefined;
                 return {
                   amount: REPORT_PRICE,
                   // x402 spells assets "policy.name"; this is the same unit as TUSDM_X402_UNIT.
                   asset: USDM_PREPROD_ASSET,
-                  extra: { datum: receiptDatum(requestIdFor(address, explicit, now())) },
+                  extra: {
+                    datum: receiptDatum(requestIdFor(address, explicit, now())),
+                  },
                 };
               },
               extra: {
@@ -147,7 +196,8 @@ export function createApp(deps: AtlasDeps) {
               },
             },
           ],
-          description: "Atlas due-diligence report on a Cardano address (0.50 tUSDM)",
+          description:
+            "Atlas due-diligence report on a Cardano address (0.50 tUSDM)",
           mimeType: "application/json",
         },
       },
@@ -163,7 +213,10 @@ export function createApp(deps: AtlasDeps) {
       return;
     }
     try {
-      const report = await buildReport(subjectOf(req), { chain: newChain(), now: Math.floor(now().getTime() / 1000) });
+      const report = await buildReport(subjectOf(req), {
+        chain: newChain(),
+        now: Math.floor(now().getTime() / 1000),
+      });
       served.set(requestId, report);
       latest = report;
       res.json({ requestId, report });
@@ -172,7 +225,11 @@ export function createApp(deps: AtlasDeps) {
         res.status(400).json({ error: `${err.message} ${err.hint}` });
       } else if (err instanceof UpstreamError) {
         // A non-2xx response keeps the middleware from settling, so the buyer is not charged.
-        res.status(503).json({ error: `Chain data provider unavailable (${err.provider}); retry shortly.` });
+        res
+          .status(503)
+          .json({
+            error: `Chain data provider unavailable (${err.provider}); retry shortly.`,
+          });
       } else {
         res.status(500).json({ error: "report failed" });
       }
