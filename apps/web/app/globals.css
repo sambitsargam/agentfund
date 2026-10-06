@@ -2020,21 +2020,34 @@ a {
   color: var(--text-2);
   font-size: 13px;
 }
+/* Matches .btn metrics exactly, so the control and the button line up. */
 .fund-wallet select,
 .fund-fields input {
   font: inherit;
-  font-size: 13px;
-  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 12px;
   border: 1px solid var(--line-2);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--bg-2);
   color: var(--text);
   max-width: 100%;
 }
+.fund-wallet select {
+  padding-right: 8px;
+  /* Chrome ignores line-height on a select's own box, so match the row's height instead
+     of hardcoding one that would drift if .btn's padding ever changes. */
+  align-self: stretch;
+}
+.fund-wallet select:hover:not(:disabled) {
+  border-color: var(--text-3);
+}
+/* A ring, not a 2px outline: on this palette a hard gold border reads as an error. */
 .fund-wallet select:focus-visible,
 .fund-fields input:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(233, 185, 73, 0.16);
 }
 .fund-wallet select:disabled {
   color: var(--text-3);
