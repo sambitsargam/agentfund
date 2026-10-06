@@ -6,7 +6,10 @@
   "scripts": {
     "distribute": "tsx src/main.ts",
     "typecheck": "tsc --noEmit -p .",
-    "sweep": "tsx src/sweep.ts"
+    "sweep": "tsx src/sweep.ts",
+    "funding": "tsx src/funding.ts",
+    "loop": "tsx src/loop.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@agentfund/cardano-tx": "0.1.0",

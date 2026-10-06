@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { config } from "dotenv";
 import { Address, Assets, Client, TransactionHash, preprod } from "@evolution-sdk/evolution";
 import { ATLAS_DEAL, BLOCKFROST_PREPROD_URL, TUSDM_MASUMI_UNIT, TUSDM_X402_UNIT, cardanoscan, formatTusdm } from "@agentfund/shared";
@@ -29,6 +30,11 @@ const client = Client.make(preprod)
   .withSeed({ mnemonic, accountIndex: 0 });
 
 const self = await client.address();
+const dataDir = process.env.COWORKER_DATA_DIR ?? fileURLToPath(new URL("../../coworker/data", import.meta.url));
+const registration = JSON.parse(readFileSync(`${dataDir}/registration.json`, "utf8")) as { payoutAddress?: string };
+if (!registration.payoutAddress || Address.toBech32(self) !== registration.payoutAddress) {
+  throw new Error("the sweep wallet does not match the registered Masumi payout address; refusing to sign");
+}
 const utxos = await client.getUtxos(self);
 const held = (unit: string) => utxos.reduce((sum, u) => sum + Assets.getByUnit(u.assets, unit), 0n);
 const masumi = held(TUSDM_MASUMI_UNIT);
