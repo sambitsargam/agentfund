@@ -100,6 +100,37 @@ The first on-chain split, for reference:
 [`075142c0…6c08`](https://preprod.cardanoscan.io/transaction/075142c03ca67a90de253149cdc0a32f80a0b658463f2879cdca2661e70c6c08)
 — 1.7% of the per-transaction memory limit for the first input, measured on chain.
 
+### A complete funding round
+
+The splitter above enforces a share that is a fixed script parameter. A **funding round**
+(`contracts/cardano/validators/funding_round.ak`) is the whole lifecycle instead: the
+investor's share is inactive until their capital reaches the operator, cumulative payouts are
+tracked in the round's datum, and the round closes itself once the cap is repaid.
+
+Terms: **0.20 tUSDM** of capital for **50%** of Atlas's x402 earnings, repaid up to a
+**0.30 tUSDM** cap. Round address
+[`addr_test1wr5kyf59uqwrtsgp4gsu4x50mpp4g5n87hvd4dtukx2ee7gxwjlhf`](https://preprod.cardanoscan.io/address/addr_test1wr5kyf59uqwrtsgp4gsu4x50mpp4g5n87hvd4dtukx2ee7gxwjlhf).
+
+| #   | Step       | Transaction                                                                                                                    | Investor (tUSDM) | Operator (tUSDM) |
+| --- | ---------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------- | ---------------- |
+| 1   | open       | [`2ab175f5…0931`](https://preprod.cardanoscan.io/transaction/2ab175f59d3838671975c52c964c00202370b605f4f7c1ee91359e1e33e60931) | +0.00            | +0.00            |
+| 2   | fund       | [`9bf13ad1…db25`](https://preprod.cardanoscan.io/transaction/9bf13ad188b4103ee194a2a66337b70253e3a0420eacdb67481c8e34fe24db25) | -0.20            | +0.20            |
+| 3   | revenue    | [`77f27c49…567c`](https://preprod.cardanoscan.io/transaction/77f27c49f6fc5735631644dd1b4185931300e24f7821a4da71f3ed2cf4d7567c) | +0.00            | -0.50            |
+| 4   | distribute | [`39754ce0…9cd2`](https://preprod.cardanoscan.io/transaction/39754ce001ef61b3712dce1ff4b138130b67e1ab493378fbd6fe034481099cd2) | +0.25            | +0.25            |
+| 5   | revenue    | [`0cdb2a62…e04c`](https://preprod.cardanoscan.io/transaction/0cdb2a62567fdc00bd051a11103c5a9c2319c07d7edb612a03b7d32a4745e04c) | +0.00            | -0.50            |
+| 6   | distribute | [`f30de9c1…1527`](https://preprod.cardanoscan.io/transaction/f30de9c191f82dbbf68215d775689a3f6b6d3d21ed844453975855a3f6ef1527) | +0.05            | +0.45            |
+| 7   | revenue    | [`132481ac…a88c`](https://preprod.cardanoscan.io/transaction/132481ac822baaff45e3a71de1564e8bce41cc80ae4f44e76f4447ef8c0fa88c) | +0.00            | -0.40            |
+| 8   | distribute | [`841fd045…80a0`](https://preprod.cardanoscan.io/transaction/841fd045b48186b13ffa59536f03c862a9ba4a6ae1af09b406d2794aa5f980a0) | +0.00            | +0.40            |
+
+Reading down the investor column: they pay 0.20 in, receive 0.25, then only **0.05** —
+because that is all that remained under the cap — and then **nothing at all**, because the round
+is closed and later revenue passes straight through to the operator. Total repaid is
+0.30 tUSDM, exactly the cap, which the validator enforces rather than our code.
+
+Every figure is a net flow re-derived from Blockfrost with
+`npm run round -w @agentfund/keeper -- verify`, which refuses to write the file if repayments
+ever exceed the cap. Full record: [docs/samples/round-verification.json](samples/round-verification.json).
+
 ## Chainlink CRE track
 
 CRE is the orchestration layer, not a bolt-on: the payment gate is what decides whether a
@@ -159,6 +190,5 @@ repayment for the Masumi route, and [docs/THREAT_MODEL.md](THREAT_MODEL.md) expl
 One paid Task has completed and collected. That demonstrates the machinery works end to end;
 it is not evidence of customer demand, and we do not present it as such.
 
-The funding-round validator (`contracts/cardano/validators/funding_round.ak`) adds capital
-activation and a payout cap, with 251 Aiken checks behind it. The on-chain revenue path in the
-transactions above runs through the splitter.
+Atlas's own day-to-day revenue still flows through the splitter; the funding round above is a
+separate, completed deal that demonstrates the lifecycle end to end.

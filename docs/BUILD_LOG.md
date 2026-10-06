@@ -5,9 +5,11 @@ Times are Singapore time (UTC+8).
 ## 6 October
 
 ### Repository
+
 - `sambitsargam/agentfund` created private; first commit `d3c1043`.
 
 ### Hosted facilitator (Cardano proof)
+
 - URL: `https://x402.preprod.dev.ecosyseng.cf-deployments.org` (Cardano Foundation, preprod).
 - `GET /supported`: `exact` on `cardano:preprod`, x402 v2, `assetTransferMethods: [default, masumi, script]`, `areFeesSponsored: false`, `l1Confirmations` 0–20.
 - Decision: `script` is supported, so splitter payments settle through the hosted facilitator. No self-hosted facilitator is needed.
@@ -15,17 +17,19 @@ Times are Singapore time (UTC+8).
   - Tx [`713c490c887a53a854029a1be96430e6e2489636f7a14181664ca78a0ba3849b`](https://preprod.cardanoscan.io/transaction/713c490c887a53a854029a1be96430e6e2489636f7a14181664ca78a0ba3849b)
 
 ### Two tUSDM tokens on preprod
+
 Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Units below are policy id + asset name with no dot.
 
-| Policy | Supply (base units) | Decimals | Who uses it |
-| --- | --- | --- | --- |
-| `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9` | 20,120,457,000,000 | 6 (SDK `USDM_DEFAULT_DECIMALS`; no registry metadata) | `@x402/cardano` 2.26.0 `USDM_PREPROD_ASSET`, the default asset in x402 spend controls; tusdm.moneta.global claim |
-| `16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde` | 10,535,544,238,003 | 6 (token registry, ticker `tUSDM`) | Masumi: `dispenser.masumi.network`, escrow payouts, TOKEN2049 agent guide |
+| Policy                                                     | Supply (base units) | Decimals                                              | Who uses it                                                                                                      |
+| ---------------------------------------------------------- | ------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9` | 20,120,457,000,000  | 6 (SDK `USDM_DEFAULT_DECIMALS`; no registry metadata) | `@x402/cardano` 2.26.0 `USDM_PREPROD_ASSET`, the default asset in x402 spend controls; tusdm.moneta.global claim |
+| `16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde` | 10,535,544,238,003  | 6 (token registry, ticker `tUSDM`)                    | Masumi: `dispenser.masumi.network`, escrow payouts, TOKEN2049 agent guide                                        |
 
 - An x402 buyer pays `e675b46e…` by default. Paying `16a55b2a…` over x402 requires an explicit `spendControls.allowedAssets` entry on the buyer; the facilitator checks asset and amount against the requirements and does not restrict the policy.
 - Consequence: the splitter is parameterised with both units, and earnings are the sum of both.
 
 ### Masumi Payment Service (local, preprod)
+
 - `masumi-network/masumi-payment-service` at `71455701ac22c3380c50da54089e1b7363f6825d` (2026-10-05), pnpm 10.30.2 via corepack, PostgreSQL 16 (Homebrew), dedicated database `mps_agentfund`, port 3012.
 - Seed (output suppressed): first run failed with `Smart contract address is changed expected: customized smart contract address`. Cause: `.env.example` ships placeholder overrides `PAYMENT_SMART_CONTRACT_ADDRESS_PREPROD` and `REGISTRY_POLICY_ID_PREPROD`. Removed both; reseed succeeded.
 - Payment source: Preprod `Web3CardanoV2`, contract `addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g`, policy `67ab0c92c4ac1610895a1c965ee50aba41a8f1513b15240723b3bd0b`.
@@ -33,6 +37,7 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
 - `GET /api/v1/health` → `{"status":"success","data":{"status":"ok"}}`.
 
 ### Sokosumi (preprod)
+
 - Account is a member of the TOKEN2049 Origins Hackathon organisation (`01a109d1-32a9-71a3-a0e3-658b2a7987cd`), which satisfies the Vendor-creation prerequisite.
 - Vendor `AgentFund` (`agentfund`): `01a10f48-b16e-75e0-b0e5-465e467f2a4c`.
 - Coworker `Atlas` (`atlas`): `01a10f48-cd2e-7408-b1f2-493af98854af`, capability `tasks`, registered private in the Personal Workspace (`01a10f1b-4f6a-7308-ad8a-90b77a759d9e`); workspace access `01a10f48-ce31-774d-9bb3-112ce568aba3` = `GRANTED`.
@@ -40,12 +45,14 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
 - **Rehearsal Task (unpaid, execution only):** `01a10f49-7ec1-746a-819e-a50f52e98b56`, input "Check addr_test1qrseuc9…7gyegt before we send it 50 tUSDM." Events: CREATED `01a10f49-7ec8-753c-8dad-1d11abee2c47` → READY `…2169380eb3a1` → RUNNING `01a10f49-9a4f-77c8-95d8-7bf1b19973e1` → COMPLETED `01a10f49-dc77-747e-8181-4a6ae2877917` (03:37:41 UTC). Result: Atlas report, verdict medium (35/100), 11 queries, 2,929 bytes; saved as `docs/samples/task-result-rehearsal.md`. This proves execution only, not payment.
 
 ### Splitter contract
+
 - `contracts/cardano` (Aiken v1.1.24, stdlib v3.1.0, fuzz v2.2.0), validator `splitter.splitter.spend`, 989 bytes unapplied, 1,162 bytes applied. 27 tests (25 unit, 2 property × 100 cases).
 - Deal: Atlas `e19e60ad…a25b`; Investor A `1cdb17c8…2035` at 1000 bps (10%); units: both tUSDM policies.
 - **Splitter (preprod):** hash `89cb6162847a8b6cc542cf4685495f0ba52ac72ab40bfad2bfdd111e`, address `addr_test1wzyukctzs3agkmx9gt85dp2ftu9622k8926qh7kjhlw3z8s7w0h96`. Same hash from three derivations: our TypeScript (`@agentfund/cardano-tx`), the facilitator's pre-applied-script path, and `aiken blueprint apply`.
 - Budget (preprod limits: 17.5M mem, 10B cpu per tx). First version re-ran the full check for every locked input: 10 inputs = 129% of memory. Fix: only the first locked input runs the whole-transaction check (the ledger always runs it), others return early. Estimated from test units (which include fixture construction, so real costs are lower): 1 input 4.8% mem, 5 inputs 39%, 10 inputs 82%, 20 inputs 168%. **Keeper batch cap: 8 inputs.**
 
 ### Atlas x402 payments into the splitter (hosted facilitator, script method)
+
 - 11:46 — 0.50 tUSDM (`e675b46e…`), receipt datum `d8799f5820b5120789…ff`. Settled on-chain but the facilitator's `/settle` returned **504 Gateway Time-out** after 68 s (its proxy timed out while waiting for one confirmation), so the buyer got HTTP 402 and no report.
   - Tx [`6704121ed5da8736605f52794896fca5e29de2e617d7fe78cbae59760b8b8999`](https://preprod.cardanoscan.io/transaction/6704121ed5da8736605f52794896fca5e29de2e617d7fe78cbae59760b8b8999), block 5259152.
   - Fix: `extra.confirmationPolicy: { l1Confirmations: 0 }` (allowed range 0–20 per `/supported`). Settlement returns on submission.
@@ -55,33 +62,39 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
 - The x402 SDK spells assets `policy.assetname` (dot); Blockfrost and the ledger use the concatenated unit. Atlas uses `USDM_PREPROD_ASSET` from `@x402/cardano` for the offer.
 
 ### First on-chain split (keeper)
+
 - 12:00 — keeper spent both splitter coins (2 × 0.50 tUSDM) in one transaction, signed by Atlas, fee 0.267642 tADA, `valid_contract: true`, block 5259162.
   - Investor A received 0.1 tUSDM (+1.18 tADA min-UTxO); Atlas received 0.9 tUSDM; both splitter coins' ADA returned to Atlas as change.
   - Tx [`075142c03ca67a90de253149cdc0a32f80a0b658463f2879cdca2661e70c6c08`](https://preprod.cardanoscan.io/transaction/075142c03ca67a90de253149cdc0a32f80a0b658463f2879cdca2661e70c6c08)
 - Measured execution units: first input (full split check) mem 303,288 / cpu 111,301,931 (1.7% / 1.1% of the per-tx limit); second input (early return) mem 42,715 / cpu 18,454,819. The test-based estimate was ~3× too high because test units include fixture construction. Cap stays at 8 until a larger batch is measured on-chain.
 
 ### AgentRatingRegistry (Base Sepolia)
+
 - `contracts/evm/src/AgentRatingRegistry.sol` inherits Chainlink's `ReceiverTemplate` (`IReceiver`, `IERC165`, `ReceiverTemplate` copied verbatim from docs.chain.link "Building Consumer Contracts"; OpenZeppelin 5.6.1 `Ownable`). Reports are `abi.encode(uint8 kind, bytes body)`: kind 1 rating `(bytes32 agentId, uint16 score, uint256 earnings, uint32 paymentCount, bool probeOk, uint32 latencyMs, uint64 observedAt)`, kind 2 decision `(bytes32 requestId, bytes32 agentId, uint8 verdict, uint32 riskFlags, uint16 ratingUsed, uint64 decidedAt)`. 11 Foundry tests.
 - **Deployed:** [`0xee171354e30f24428eEaAaDA952eEC7479b08131`](https://sepolia.basescan.org/address/0xee171354e30f24428eEaAaDA952eEC7479b08131), forwarder = simulation `0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5` (read back on-chain), owner `0xa5C8061568e21D3dc40AD45DFb06b0d9A3E16478`, block 47745260.
   - Tx [`0x27bf50e25bb91b0fff094f6a0ef961e6b19bc9613a47f8ab39b4102a32f70e02`](https://sepolia.basescan.org/tx/0x27bf50e25bb91b0fff094f6a0ef961e6b19bc9613a47f8ab39b4102a32f70e02)
 
 ### CRE workflows
+
 - Rating workflow: first rating 385 written to the registry (see `docs/CHAINLINK_EVIDENCE.md`). Finalized-block reads returned empty data for a freshly deployed registry (Base Sepolia finality lags); the "skip unchanged" read now uses the latest block, and the registry's own replay check remains the guard.
 - Javy (the CRE TypeScript-to-WASM step) rejects exported function declarations with parameters in the entry module; pure logic lives in separate modules.
 - Payment gate: started from Chainlink's `ai-audit-firewall-ts`. Confidential HTTP (`vaultDonSecrets`) cannot be called from a TEE handler, so, as in the template, LLM and Blockfrost keys are read with `getSecret` inside the enclave and requests use the regular `HTTPClient` there. The pre-hook can run with an empty config, so `main` supplies restriction-only defaults (also from the template). Allow and deny decisions written with mock auditors.
 
 ### Gated agent payments (buyer agent → CRE gate → x402 → splitter)
+
 - 12:08 — fanout: buyer split into 10 coins of 5 tADA + 20 tUSDM, [`4e0fc395…0111`](https://preprod.cardanoscan.io/transaction/4e0fc39599dcbaebe4209504ac7532794a1141a1e9e24a1ecdf0764188cc0111) (first attempt failed with `Blockfrost getProtocolParameters failed`; Blockfrost usage was low and responses ~1 s, so this is an intermittent slow response hitting the SDK's 10 s provider timeout).
 - 12:08 — **gated payment, request `0xd5cefbdb…e495`**: Atlas offer 0.50 tUSDM → gate ALLOW (flags 0, rating 385) [`0x95bd73aa…3a5a`](https://sepolia.basescan.org/tx/0x95bd73aa0c306b64294145e27908c9758f77deb166d38313021ea1ce2ff43a5a) → x402 payment into the splitter in 21.0 s [`3efa54df70e619e349db20ce5e925ebdb6c771e76131bfd485071dac871d59ba`](https://preprod.cardanoscan.io/transaction/3efa54df70e619e349db20ce5e925ebdb6c771e76131bfd485071dac871d59ba). End to end 37.5 s. The payment's inline datum is `d8799f5820d5cefbdb…e495ff`, the same request id that keys the gate decision.
 - 12:09 — **tampered payment, request `0xfc01bda4…7302`**: payTo swapped to Investor A's wallet → gate DENY (flags 1 `payToMismatch`) [`0xc625f8ae…ba39`](https://sepolia.basescan.org/tx/0xc625f8ae1158732948d79b209f64331efa8b087dba5fa86985725883f07aba39) → buyer did not pay.
 - The buyer pays through an `x402Client` selector that only accepts an offer identical (payTo, asset, amount, script hash) to the one the gate approved.
 
 ### Coworker worker
+
 - Paid-flow API taken from Masumi's verified reference (`masumi-network/demo-agent-token2049`, branch `live-demo-name-finder` @ `ff35ea7`): MPS `POST /api/v1/payment` for signed terms, Core `POST /v1/tasks/{id}/events` with `masumiPayment`, MPS `resolve-blockchain-identifier` until `FundsLocked`, MPS `submit-result` with `sha256(result)`, Core `COMPLETED` event, Core `GET /v1/tasks/{id}/receipt` plus Blockfrost to prove the withdrawal. Preprod deadlines: pay by +5 min, result by +20, unlock +36, dispute end +52, so collection lands in about an hour.
 - The Coworker runtime key alone can read `/v1/coworkers/me` and list `/v1/tasks`, so the worker is plain HTTP against `https://api.preprod.sokosumi.com` and can run on a host without the CLI vault or an account login.
 - **Automatic unpaid Task (12:14):** `01a10f6b-29e3-721b-b090-6064e2f2c056`, input "Our grants team is about to send funds to stake_test1uqftfj2n…dm6923. Is this wallet safe to pay?". Picked up by the worker in under 5 s and completed 6 s later with the Atlas report (medium risk 25/100) for the stake address's payment address. Unpaid because Masumi registration needs Atlas's public URL.
 
 ### 14:50 — funding, payment token, event workspace
+
 - MPS selling wallet funded with 50 tADA from Atlas's preprod wallet: [`2f6f3d30953fa9ace006dfeae4cbb352822120ccf25c2d88907aecaac8fdfba4`](https://preprod.cardanoscan.io/transaction/2f6f3d30953fa9ace006dfeae4cbb352822120ccf25c2d88907aecaac8fdfba4), block 5259666.
 - Scoped MPS runtime key `cmuwbjtqz000357ujv5khrw77` (read + pay, no admin, Preprod only) for the worker; stored only in `services/coworker/.env.local`.
 - Atlas connected to the TOKEN2049 event workspace (organisation `01a109d1-32a9-71a3-a0e3-658b2a7987cd`): access `01a10ffa-17a9-72ae-a1a6-c7e49c552572` is **PENDING** event approval.
@@ -89,25 +102,30 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
 - Decisions: hosting and Masumi registration happen after the build is complete (owner decision); registration will use the hosted HTTPS URL.
 
 ### Dashboard
-- Rebuilt as a dark operations console after review: the first version buried the product under an essay-sized headline and its flow diagram was drawn with thick *stroked* curves, which render as lumpy blobs. Sankey ribbons are now closed filled paths, bars keep true proportions, and labels are pushed apart so a small slice (0.1 tUSDM to the investor) still reads clearly beside a large one.
+
+- Rebuilt as a dark operations console after review: the first version buried the product under an essay-sized headline and its flow diagram was drawn with thick _stroked_ curves, which render as lumpy blobs. Sankey ribbons are now closed filled paths, bars keep true proportions, and labels are pushed apart so a small slice (0.1 tUSDM to the investor) still reads clearly beside a large one.
 - Everything on the page is read from the chains: Base Sepolia registry events for ratings and decisions, and splitter transactions on Cardano for payments and splits, joined by the receipt datum's request id. Revalidates every 20 s.
 - 15:01 — second split: 2 coins, Investor A 0.1 tUSDM, Atlas 0.9 tUSDM, block 5259695. Tx [`c8377ab4d1008451c4a90da334708f256c1f33fef78820ce56e1c41db653fd90`](https://preprod.cardanoscan.io/transaction/c8377ab4d1008451c4a90da334708f256c1f33fef78820ce56e1c41db653fd90). Dashboard picked it up automatically: 0.2 tUSDM repaid across 2 splits.
 
 ### Live demo actions
+
 - The dashboard has four working buttons, each running the real pipeline server-side and streaming its output with explorer links: **Buy a report** (gate → x402 payment into the splitter), **Try a tampered payment** (gate DENY, nothing paid), **Split to the investor** (keeper), **Refresh the rating** (CRE `--broadcast`).
 - Guards, so a public deployment cannot be drained: one run at a time, a per-action cooldown (45 s payments, 30 s split, 60 s rating), a cap on runs that spend test money (`DEMO_MAX_PAID_RUNS`, default 40), a 4-minute kill, and the whole feature behind `DEMO_ACTIONS=on`. Only the honest purchase spends; a denied payment costs nothing by construction.
 - Verified through the API: tampered run returned gate DENY (flags 1) at [`0x808bb536…f386`](https://sepolia.basescan.org/tx/0x808bb536dadad8263965253df6160e531205342e4e6f69ca159693d317df386) and paid nothing.
 
 ### Masumi registration and direct collection into the splitter
+
 - Registered Atlas with the **X402 access model** (`services/coworker/src/register.ts`), so one Masumi identity covers both income routes: escrow for Sokosumi Tasks and x402 for agent reports. `x402ResourcesUrl` points at Atlas's own manifest; it will be updated to the public URL after hosting with `npm run register -w @agentfund/coworker -- url …`.
 - The payment-source listing carries no wallets, so the selling wallet is looked up by id (`MPS_SELLING_WALLET_ID`).
 - MPS held the registration while it prepared collateral: the seeded wallet had a single UTxO, so it first submitted a collateral-prep transaction [`110eeed7…616b`](https://preprod.cardanoscan.io/transaction/110eeed7001cd3403591e0f1d6bd6f802e75cc56c1a0b517eb39b9f35465616b) and deferred registration to the next cycle (`REGISTER_AGENT_INTERVAL` is 5 minutes).
 - Registration `cmuwcy50o000757ujgfclcp17`, agent identifier `67ab0c92…000000`.
-- **Collection into the splitter: tried, rejected by Masumi.** `PATCH /api/v1/wallet` with `newCollectionAddress` = the splitter was *accepted*, but the next `POST /api/v1/payment` failed with `sellerReturnAddress must be a Cardano base or enterprise address with a payment key credential`. Masumi's escrow datum cannot name a script address as the seller's return address. Reverted to the seeded key wallet, where signed terms succeed. Escrow earnings therefore reach the splitter via a keeper sweep, which is recorded as an open trust gap in `docs/THREAT_MODEL.md`.
+- **Collection into the splitter: tried, rejected by Masumi.** `PATCH /api/v1/wallet` with `newCollectionAddress` = the splitter was _accepted_, but the next `POST /api/v1/payment` failed with `sellerReturnAddress must be a Cardano base or enterprise address with a payment key credential`. Masumi's escrow datum cannot name a script address as the seller's return address. Reverted to the seeded key wallet, where signed terms succeed. Escrow earnings therefore reach the splitter via a keeper sweep, which is recorded as an open trust gap in `docs/THREAT_MODEL.md`.
 - The worker's step guard behaved as designed when the 400 arrived: the Task was marked `failed` with "interrupted during terms-pending; inspect before retrying" rather than retrying a payment write whose outcome was unknown.
 
 ### Paid Sokosumi Task — what the escrow flow actually requires
+
 Three rejections before the terms were accepted, each worth recording:
+
 1. `sellerReturnAddress must be a Cardano base or enterprise address with a payment key credential` — Masumi escrow cannot pay out to a script, so the splitter cannot be the collection address (see `docs/THREAT_MODEL.md`).
 2. `signed terms name a different seller wallet` — our own bug: the registration file wrote `sellingWalletId` while the worker read `sellerWalletId`.
 3. `Submit result time must be before unlock time with at least 15 minutes difference` — Masumi's own minimum. Deadlines are now pay-by 15 min, result 25, unlock 40, dispute 60, validated by `checkDeadlines` so the gap cannot regress.
@@ -115,6 +133,7 @@ Three rejections before the terms were accepted, each worth recording:
 The first paid Task also expired unfunded: Sokosumi Core charged its 100 credits and funds escrow asynchronously, and the reference's 5-minute pay-by window passed before it paid. The worker now fails a payment that is still unfunded past its signed pay-by time instead of polling it forever.
 
 ### Access model: X402 registration does not work for Sokosumi paid Tasks
+
 Three paid Tasks in the event workspace were charged credits by Core and then **refunded** (`GET /v1/tasks/{id}/receipt` → `claimStatus: REFUNDED`, `onChainState: None`), so escrow was never funded and the signed pay-by time passed. Core accepted the `masumiPayment` event each time; it simply did not fund.
 
 The agent was registered with `type: "X402"` and an `x402ResourcesUrl`. Masumi's own reference implementation registers `type: "Standard"` with an `apiBaseUrl` for exactly this flow, so the access model is the difference: a Sokosumi Task is bought through the Task interface, not through x402 resources. x402 payments need no registry entry at all — the facilitator re-derives the script address from the 402 itself, which is what tx `76abb642…` and the gated payments prove.
@@ -124,13 +143,16 @@ Deregistered the X402 agent (`DeregistrationConfirmed`) and re-registered as `St
 **Confirmed the diagnosis.** With the Standard registration (`cmuwev0io001e57ujoe49a0y3`, agent identifier `67ab0c92…000000`), the next paid Task reached `claimStatus: PURCHASED` instead of `REFUNDED`, so Core funded the claim. Every refused attempt had been X402; the first Standard attempt was purchased.
 
 ### Pre-deploy smoke test (17:00)
+
 Running all four dashboard actions in sequence caught two bugs that would have broken the demo:
+
 1. **Ratings went stale.** The rating workflow skipped the write whenever the score was unchanged, so `observedAt` never moved; an hour later the payment gate saw a stale rating and returned REVIEW for every payment (flags 288 = ratingStale + auditorUnsure). An unchanged rating is now rewritten once it is 30 minutes old.
-2. **The report-quality auditor graded the wrong thing.** It kept judging the *wallet* the report describes ("the wallet is very new… concerns") rather than Atlas's work, which produced `auditorUnsure` (flag 256). Rewrote the prompt to state explicitly what is and is not being assessed, and moved that auditor to `gpt-4.1-mini`; it now answers allow/95 with sound reasoning.
+2. **The report-quality auditor graded the wrong thing.** It kept judging the _wallet_ the report describes ("the wallet is very new… concerns") rather than Atlas's work, which produced `auditorUnsure` (flag 256). Rewrote the prompt to state explicitly what is and is not being assessed, and moved that auditor to `gpt-4.1-mini`; it now answers allow/95 with sound reasoning.
 
 Clean run afterwards: ALLOW [`0x96fd274c…`](https://sepolia.basescan.org/tx/0x96fd274cb92eb54242eaa8eb4c5c7dc4b0fd4b8ad760cb1d709e46846be44047) → payment [`399d922c…`](https://preprod.cardanoscan.io/transaction/399d922caba6d10b927ee618b33687bbbf3aedd8f904710e7604e25ef2c925cb) → split [`c306e9e4…`](https://preprod.cardanoscan.io/transaction/c306e9e47d7d4473cca6a1709914cd641fe7d494eaf9ee8770923223d16657b0) (backer 0.05, Atlas 0.45) → rating 505 [`0xba3e6110…`](https://sepolia.basescan.org/tx/0xba3e611072c0a4ebaa4090136c5c5f4241df215e4d024a193ba2aa145ef4c6b1); tampered payment DENY [`0xc818729f…`](https://sepolia.basescan.org/tx/0xc818729f03403fef9c78b6eb7acdadb5074afc4bc09e1b86b1409d445512be1e).
 
 ### 6 October — verification and paid Task repayment complete
+
 - Verified paid Task `01a11053-0ffc-75dd-bad7-1e6b98910cc8` and collection `216f781ace511d1f4e690ea3633916b03d7289950601a4ff99e4fa6eaf12f34b` against live services and Blockfrost.
 - After the owner configured the selling-wallet mnemonic locally, swept 1 Masumi tUSDM: `100acc1782a1f9f35525db7ef8db5f10acceb07f541292038ef2cb90692b94ac`.
 - Confirmed mixed-asset distribution `a58888e10d7a20ff73dcd33f23902d0994de8fbddfe48df573173a0f088141b5`: investor 0.10 Masumi + 0.05 x402; Atlas 0.90 Masumi + 0.45 x402. Full public outputs and phase checks are in `docs/VERIFICATION.md` and `docs/samples/settlement-verification.json`.
@@ -140,6 +162,7 @@ Clean run afterwards: ALLOW [`0x96fd274c…`](https://sepolia.basescan.org/tx/0x
 - No commits or pushes. Hosting, deck, embedded video and submission remain the final stage.
 
 ### Cardano upgrade 1 — result quality and explainable scope
+
 - Atlas report version 2 separates registration claims from safety: registration no longer suppresses contract/no-stake warnings. Missing first/last history produces Unknown.
 - Added a “Before you pay” recommendation and data limits to JSON, Sokosumi Markdown and the free dashboard preview. Balance agreement is described as a field check, not a safety endorsement. Stake queries explicitly cover one indexed payment address.
 - Added sixteen manually specified acceptance scenarios and four report-level regressions. Workspace total is now 82 tests; all workspace types passed.
@@ -148,6 +171,7 @@ Clean run afterwards: ALLOW [`0x96fd274c…`](https://sepolia.basescan.org/tx/0x
 - No new transactions, dependency upgrades, deployments, commits or pushes for this upgrade. Public hosting and real-user validation remain open.
 
 ### 6 October — Cardano upgrade 2: paid Task repayment timeline
+
 - Added the read-only Task → collection → direct sweep → investor/Atlas payout timeline with explorer links and Task/payment/completion identifiers.
 - Matches exact spent output references and the Masumi token policy; excludes reference/collateral inputs and wallet change. Unrelated same-amount payments cannot establish repayment. Batch totals are explicitly distinguished from per-Task allocations.
 - Live preview independently reads the known Task path: 1 Masumi tUSDM collected and swept, investor 0.10 and Atlas 0.90 paid. The selling-wallet trust window remains visible.
@@ -158,3 +182,34 @@ Clean run afterwards: ALLOW [`0x96fd274c…`](https://sepolia.basescan.org/tx/0x
 ## 6 October 2026 — funding, public threat evidence and operations
 
 Added experimental warning labels, six-address public threat diagnostic/provenance lookup, address-bound funded identity, automatic durable keeper controller, closed 2-test-ADA funding verification and subsequent 0.05/0.45 tUSDM payout, and observed live reliability counts plus 100 simulated restart lifecycles. Kept failure counts and custody limitations visible. Clarified the deliberately blocked redirect test and made completed runs dismissible. Evidence and unclosed requirements are recorded in CARDANO_HARDENING.md. No pushes.
+
+### Funding round, opened to closed on preprod
+
+A round is parameterised by its terms _and_ a seed output reference, so its address is unique
+and a cancelled round can never be re-opened at it. State lives in an inline datum on a coin
+authenticated by a marker NFT minted under the script's own hash.
+
+- Terms: 0.20 tUSDM capital, 50% of x402 earnings, 0.30 tUSDM cap.
+- Open `2ab175f5…0931` · fund `9bf13ad1…db25` · distribute `39754ce0…9cd2` (0.25) ·
+  distribute `f30de9c1…1527` (0.05, closes at the cap) · distribute `841fd045…80a0` (0.00, closed).
+- The investor received exactly 0.30 tUSDM, the cap, across the whole round.
+
+Three things worth recording:
+
+- **The runner raced itself.** `open` picked a seed UTxO from one Blockfrost read and then
+  `prepareRoundOpen` re-read the set to build; a top-up transaction landed in between and spent
+  the seed, so the build failed with "Seed is spent or unavailable". Nothing was submitted. The
+  fix is to build first and persist the seed only once the build succeeds, because the seed is
+  part of the round's identity — recording a seed that turns out to be spent would name a round
+  that can never exist.
+- **An uncertain submission stayed uncertain.** A `revenue` step set its pending flag and then
+  failed before the node saw it. The runner refused to retry, which is correct: it cannot tell a
+  failed signature from a submitted transaction. Added `round resolve`, which asks the chain
+  rather than the log — it adopts any unrecorded transaction at the round address and only
+  clears the flag when there is none.
+- **Blockfrost's `evaluateTx` failed twice, transiently**, on distributions that succeeded
+  unchanged on retry. Same intermittent class as the `getUtxos` and `getProtocolParameters`
+  failures recorded above.
+
+`npm run round -w @agentfund/keeper -- verify` re-derives every net flow from Blockfrost and
+refuses to write its evidence file if repayments ever exceed the cap.

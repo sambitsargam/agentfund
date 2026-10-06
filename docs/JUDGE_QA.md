@@ -131,7 +131,7 @@ trick.
 
 ### What is not finished?
 
-The funding-round validator is implemented and tested but the live revenue path still runs
-through the splitter. The CRE workflows run through CLI simulation with real testnet writes
-rather than a DON deployment. The Masumi sweep gap above is unclosed by design, not by
-omission.
+Atlas's day-to-day revenue still flows through the fixed splitter; the funding round is a
+separate completed deal rather than the live path for every payment. The CRE workflows run
+through CLI simulation with real testnet writes rather than a DON deployment. The Masumi sweep
+gap above is unclosed by design, not by omission.
