@@ -1,0 +1,25 @@
+{
+  "authorizedKeys": [],
+  "atlasUrl": "http://localhost:4021",
+  "blockfrostBaseUrl": "https://cardano-preprod.blockfrost.io/api/v0",
+  "registryAddress": "0xee171354e30f24428eEaAaDA952eEC7479b08131",
+  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+  "gasLimit": "500000",
+  "blockfrostSecretId": "blockfrost_project_id",
+  "auditors": [
+    { "name": "offer-integrity", "provider": "mock", "url": "http://127.0.0.1:8787/v1/chat/completions/allow", "model": "mock", "secretId": "auditor_a_key" },
+    { "name": "report-quality", "provider": "mock", "url": "http://127.0.0.1:8787/v1/chat/completions/allow", "model": "mock", "secretId": "auditor_b_key" }
+  ],
+  "policy": {
+    "splitterAddress": "addr_test1wzyukctzs3agkmx9gt85dp2ftu9622k8926qh7kjhlw3z8s7w0h96",
+    "splitterCodeHash": "0xd15c469a6b53f9c3d2b93aa26110808dd0b2b694f6ea65c69f2e7739a1025c10",
+    "allowedAssets": [
+      "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9.0014df10745553444d",
+      "16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde.0014df10745553444d"
+    ],
+    "maxAmount": "5000000",
+    "minScore": 300,
+    "maxRatingAgeSeconds": 3600,
+    "minAuditorConfidence": 70
+  }
+}

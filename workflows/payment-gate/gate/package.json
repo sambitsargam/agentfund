@@ -1,0 +1,19 @@
+{
+  "name": "agentfund-payment-gate",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "mock": "bun mock-server.ts"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@chainlink/cre-sdk": "1.18.0",
+    "viem": "2.57.3"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
