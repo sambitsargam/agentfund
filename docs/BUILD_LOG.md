@@ -38,3 +38,18 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
 - Coworker `Atlas` (`atlas`): `01a10f48-cd2e-7408-b1f2-493af98854af`, capability `tasks`, registered private in the Personal Workspace (`01a10f1b-4f6a-7308-ad8a-90b77a759d9e`); workspace access `01a10f48-ce31-774d-9bb3-112ce568aba3` = `GRANTED`.
 - Coworker runtime key created with the guide's private-file command into `services/coworker/.env.local` (mode 600, git-ignored) and imported into the CLI vault.
 - **Rehearsal Task (unpaid, execution only):** `01a10f49-7ec1-746a-819e-a50f52e98b56`, input "Check addr_test1qrseuc9…7gyegt before we send it 50 tUSDM." Events: CREATED `01a10f49-7ec8-753c-8dad-1d11abee2c47` → READY `…2169380eb3a1` → RUNNING `01a10f49-9a4f-77c8-95d8-7bf1b19973e1` → COMPLETED `01a10f49-dc77-747e-8181-4a6ae2877917` (03:37:41 UTC). Result: Atlas report, verdict medium (35/100), 11 queries, 2,929 bytes; saved as `docs/samples/task-result-rehearsal.md`. This proves execution only, not payment.
+
+### Splitter contract
+- `contracts/cardano` (Aiken v1.1.24, stdlib v3.1.0, fuzz v2.2.0), validator `splitter.splitter.spend`, 989 bytes unapplied, 1,162 bytes applied. 27 tests (25 unit, 2 property × 100 cases).
+- Deal: Atlas `e19e60ad…a25b`; Investor A `1cdb17c8…2035` at 1000 bps (10%); units: both tUSDM policies.
+- **Splitter (preprod):** hash `89cb6162847a8b6cc542cf4685495f0ba52ac72ab40bfad2bfdd111e`, address `addr_test1wzyukctzs3agkmx9gt85dp2ftu9622k8926qh7kjhlw3z8s7w0h96`. Same hash from three derivations: our TypeScript (`@agentfund/cardano-tx`), the facilitator's pre-applied-script path, and `aiken blueprint apply`.
+- Budget (preprod limits: 17.5M mem, 10B cpu per tx). First version re-ran the full check for every locked input: 10 inputs = 129% of memory. Fix: only the first locked input runs the whole-transaction check (the ledger always runs it), others return early. Estimated from test units (which include fixture construction, so real costs are lower): 1 input 4.8% mem, 5 inputs 39%, 10 inputs 82%, 20 inputs 168%. **Keeper batch cap: 8 inputs.**
+
+### Atlas x402 payments into the splitter (hosted facilitator, script method)
+- 11:46 — 0.50 tUSDM (`e675b46e…`), receipt datum `d8799f5820b5120789…ff`. Settled on-chain but the facilitator's `/settle` returned **504 Gateway Time-out** after 68 s (its proxy timed out while waiting for one confirmation), so the buyer got HTTP 402 and no report.
+  - Tx [`6704121ed5da8736605f52794896fca5e29de2e617d7fe78cbae59760b8b8999`](https://preprod.cardanoscan.io/transaction/6704121ed5da8736605f52794896fca5e29de2e617d7fe78cbae59760b8b8999), block 5259152.
+  - Fix: `extra.confirmationPolicy: { l1Confirmations: 0 }` (allowed range 0–20 per `/supported`). Settlement returns on submission.
+- 11:49 — 0.50 tUSDM, HTTP 200 after 43.2 s, report delivered, receipt `success: true`, `confirmations: 0`.
+  - Tx [`76abb642c411ff657f5a030e94d415468ba0d1123bfe7f6e158894c5bddd7dfb`](https://preprod.cardanoscan.io/transaction/76abb642c411ff657f5a030e94d415468ba0d1123bfe7f6e158894c5bddd7dfb), block 5259156.
+- Two attempts before the second payment failed with `Failed to create payment payload: Blockfrost getUtxos failed` (transient, before signing; nothing spent). The buyer agent retries that step.
+- The x402 SDK spells assets `policy.assetname` (dot); Blockfrost and the ledger use the concatenated unit. Atlas uses `USDM_PREPROD_ASSET` from `@x402/cardano` for the offer.
