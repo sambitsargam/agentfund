@@ -1,0 +1,19 @@
+[
+  {
+    "id": "f603a10c1e65e4b86baf1baa2bb247dd4314391ed27cfcbaf919d947",
+    "agent": "atlas",
+    "service": "recipient-check",
+    "terms": {
+      "operator": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+      "policy": "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9",
+      "name": "0014df10745553444d",
+      "capital": "200000",
+      "bps": 5000,
+      "cap": "300000"
+    },
+    "seed": {
+      "txHash": "841fd045b48186b13ffa59536f03c862a9ba4a6ae1af09b406d2794aa5f980a0",
+      "index": 2
+    }
+  }
+]

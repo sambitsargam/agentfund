@@ -27,18 +27,24 @@ export class RoundStore {
     writeFileSync(tmp, JSON.stringify(value, null, 2) + "\n", { mode: 0o600 });
     renameSync(tmp, file);
   }
+  private bundled(): RoundConfig[] {
+    const file = resolve(repositoryRoot(), "docs/samples/funding-rounds.json");
+    return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : [];
+  }
+  private validate(c: RoundConfig) {
+    if (c.id !== buildRound(c).hash) throw new Error("Round identity does not match its terms");
+    return c;
+  }
   rounds(): RoundConfig[] {
     const dir = resolve(this.dir, "rounds");
-    if (!existsSync(dir)) return [];
-    return readdirSync(dir).filter(f => f.endsWith(".json")).map(f => {
-      const c = this.read<RoundConfig>("rounds", f.slice(0, -5))!;
-      if (c.id !== buildRound(c).hash) throw new Error("Round identity does not match its terms");
-      return c;
-    });
+    const local = existsSync(dir) ? readdirSync(dir).filter(f => f.endsWith(".json")).map(f => this.read<RoundConfig>("rounds", f.slice(0, -5))!) : [];
+    const merged = new Map([...this.bundled(), ...local].map(c => [c.id, this.validate(c)]));
+    return [...merged.values()];
   }
   round(id: string): RoundConfig {
-    const c = this.read<RoundConfig>("rounds", id);
-    if (!c || c.id !== buildRound(c).hash) throw new Error("Round not found");
-    return c;
+    safeId(id);
+    const c = this.read<RoundConfig>("rounds", id) ?? this.bundled().find(c => c.id === id);
+    if (!c) throw new Error("Round not found");
+    return this.validate(c);
   }
 }

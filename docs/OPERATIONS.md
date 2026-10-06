@@ -27,6 +27,8 @@ The shape that fits is Railway for anything long-running plus Vercel for the das
 - Inject secrets as environment variables; never bake a `.env` into an image.
 - Attach a volume for the Coworker's `COWORKER_DATA_DIR`. Task state lives there, and a container-local file disappears on redeploy, which is exactly when a paid Task would be repeated.
 
+**Funding persistence** — attach a volume at `/data` to Atlas and set `FUNDING_DATA_DIR=/data/funding`. Configure a server-only shared `FUNDING_API_TOKEN` on Atlas and Vercel, and set Vercel `FUNDING_API_URL` to Atlas’s HTTPS `/funding` endpoint. The dashboard proxies funding requests; Atlas owns the durable store. See [FUNDING_FEATURE.md](FUNDING_FEATURE.md).
+
 **Vercel** — the dashboard. It needs `BLOCKFROST_PROJECT_ID`, `COWORKER_URL` and `BASE_SEPOLIA_RPC`. Leave `DEMO_ACTIONS` unset on Vercel. Live actions launch local commands and the CRE CLI and require a persistent host with the repository, dependencies and testnet credentials; the guards in `apps/web/lib/jobs.ts` do not make that runtime available on Vercel.
 
 After deploying Atlas, update the Standard registration's `apiBaseUrl` to its public HTTPS base URL using MPS. The current CLI `url` subcommand sends `x402ResourcesUrl` and is intended for X402 registrations; do not use it to update this Standard registration. Keep the manifest at `/.well-known/x402.json` for x402 discovery.

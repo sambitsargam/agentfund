@@ -65,8 +65,27 @@ empty. Legacy pending records without hashes require manual inspection.
 
 ## Evidence scope
 
-See `docs/evidence/funding/product-lifecycle.json` for the product-path preprod test, when
-present. The earlier `round.json` demonstration used operator deposits; its UI is now labelled
+See `docs/samples/round-f603a10c-verification.json` for the product-path preprod test. The earlier `round.json` demonstration used operator deposits; its UI is now labelled
 accordingly. Unit tests cover wallet account changes, mainnet refusal, expiry, timeout/restart
 retries, funding-state payment refusal and exact x402 destination binding. These tests do not
 substitute for third-party usability studies, customer demand, or a production security audit.
+
+## Hosted funding (7 October completion)
+
+The Vercel dashboard forwards `/api/funding` to Atlas's persistent `/funding` API.
+Set `FUNDING_API_URL=https://<atlas-host>/funding` and `FUNDING_API_TOKEN` on Vercel;
+set the same token on Atlas. The token remains server-only. Atlas owns the round and
+proposal store on its attached volume (`FUNDING_DATA_DIR=/data/funding`). The paid round
+routes read that same store, so a new funded offer is immediately available to customers.
+Do not put this store on Vercel's ephemeral filesystem or on independent service disks.
+
+If the backend is missing or unreachable, the dashboard returns a clear 503 and preserves
+saved signed transactions. It never silently falls back to a temporary serverless store.
+The published round catalog in `docs/samples/funding-rounds.json` restores the verified
+closed demonstration on a fresh host; it contains public terms and seed references only.
+New offers and unsigned proposals persist in the volume. Back up that volume.
+
+The customer-funded test is recorded in `docs/samples/round-f603a10c-verification.json`:
+0.20 tUSDM capital, two 0.50 tUSDM x402 purchases from our test buyer, and investor payouts
+of 0.25 then 0.05 tUSDM, closing at the 0.30 cap. This is internal testnet evidence, not an
+external paying-customer study. No new payment is needed to reverify it.

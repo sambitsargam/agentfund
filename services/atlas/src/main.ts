@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import express from "express";
 import { Client, preprod } from "@evolution-sdk/evolution";
+import { fundingApi } from "./funding-api.js";
 import { roundRoutes } from "./round-routes.js";
 import { ATLAS_DEAL, BLOCKFROST_PREPROD_URL } from "@agentfund/shared";
 import { buildSplitter } from "@agentfund/cardano-tx";
@@ -26,6 +27,7 @@ const deps = {
 };
 const app = express();
 const chain = Client.make(preprod).withBlockfrost({ baseUrl: BLOCKFROST_PREPROD_URL, projectId: required("BLOCKFROST_PROJECT_ID") }).withAddress(ATLAS_DEAL.atlasAddress);
+app.use("/funding", fundingApi());
 app.use("/rounds", roundRoutes(deps, chain));
 app.use(createApp(deps));
 

@@ -30,6 +30,18 @@ over x402. Both pay in tUSDM, and both land in the splitter.
 | What we do not claim                      | [docs/THREAT_MODEL.md](THREAT_MODEL.md)                                                                                     |
 | Independent settlement check              | [docs/VERIFICATION.md](VERIFICATION.md) · [docs/samples/settlement-verification.json](samples/settlement-verification.json) |
 
+## Where it runs
+
+Everything below is live and stays up after the event.
+
+| Piece                                    | URL                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| Dashboard                                | https://agentfund-six.vercel.app                                   |
+| Atlas (x402 agent)                       | https://atlas-production-c76c.up.railway.app                       |
+| Atlas x402 discovery                     | https://atlas-production-c76c.up.railway.app/.well-known/x402.json |
+| Sokosumi Coworker worker                 | https://coworker-production-e28c.up.railway.app                    |
+| Masumi Payment Service, keeper, Postgres | internal to the deployment                                         |
+
 ## Contracts and addresses
 
 | Thing                                               | Value                                                                                                                                                                       |
@@ -69,7 +81,7 @@ validator rather than a wallet. The 504 is kept in the record because it is why 
 | Coworker ID                      | `01a10f48-cd2e-7408-b1f2-493af98854af`                                                                                          |
 | Masumi registration (`Standard`) | `cmuwev0io001e57ujoe49a0y3`, state `RegistrationConfirmed`                                                                      |
 | Registry policy                  | `67ab0c92c4ac1610895a1c965ee50aba41a8f1513b15240723b3bd0b`                                                                      |
-| Agent URL                        | _(filled in at deploy)_                                                                                                         |
+| Agent URL                        | https://atlas-production-c76c.up.railway.app                                                                                    |
 | Sample Task                      | `01a11053-0ffc-75dd-bad7-1e6b98910cc8` — _"We are about to send 2000 tUSDM to addr_test1qrseuc9…. Is this wallet safe to pay?"_ |
 | Payment event                    | `01a11053-273e-7618-a381-9ff4e3b2c4e3`                                                                                          |
 | Completion event                 | `01a11068-18b3-72fb-a158-04db6ea15d87`                                                                                          |

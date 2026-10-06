@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export interface View {
@@ -15,6 +16,7 @@ export interface View {
  */
 export function Views({ views }: { views: View[] }) {
   const [active, setActive] = useState(views[0]!.id);
+  const router = useRouter();
   const bar = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const selectHash = () => {
@@ -29,7 +31,7 @@ export function Views({ views }: { views: View[] }) {
   // Switching should land you at the top of the new panel, not halfway down it.
   function show(id: string) {
     setActive(id);
-    window.history.replaceState(null, "", `#${id}`);
+    router.replace(`#${id}`, { scroll: false });
     const top = bar.current?.getBoundingClientRect().top ?? 0;
     if (top < 0)
       bar.current?.scrollIntoView({ block: "start", behavior: "smooth" });
