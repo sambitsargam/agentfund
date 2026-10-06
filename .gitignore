@@ -1,0 +1,24 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.skey
+*.vkey
+
+# dependencies and build output
+node_modules/
+dist/
+build/
+out/
+cache/
+broadcast/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+.cre_build_tmp.js
+*.wasm
+
+# logs and OS files
+*.log
+.DS_Store
