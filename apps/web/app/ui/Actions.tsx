@@ -105,8 +105,62 @@ export function Actions({ enabled, videoUrl }: { enabled: boolean; videoUrl?: st
   const [done, setDone] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [showLog, setShowLog] = useState(false);
+  const [server, setServer] = useState<{ busy: boolean; runningId: string | null; runningAction: Action | null; cooldown: Record<Action, number> } | null>(null);
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
+  const followed = useRef<string | null>(null);
+
+  const follow = useCallback(
+    (id: string, which: Action) => {
+      if (followed.current === id) return;
+      followed.current = id;
+      setAction(which);
+      setBusy(which);
+      setDone(false);
+      if (poll.current) clearInterval(poll.current);
+      poll.current = setInterval(async () => {
+        const r = await fetch(`/api/demo/job/${id}`);
+        if (!r.ok) {
+          if (poll.current) clearInterval(poll.current);
+          setBusy(null);
+          return;
+        }
+        const j = (await r.json()) as { lines: string[]; done: boolean };
+        setLines(j.lines);
+        if (j.done) {
+          if (poll.current) clearInterval(poll.current);
+          if (tick.current) clearInterval(tick.current);
+          setBusy(null);
+          setDone(true);
+          router.refresh();
+        }
+      }, 1500);
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    if (!enabled) return;
+    let stop = false;
+    const read = async () => {
+      try {
+        const r = await fetch("/api/demo/status");
+        const s = (await r.json()) as { enabled: boolean; busy?: boolean; runningId?: string | null; runningAction?: Action | null; cooldown?: Record<Action, number> };
+        if (stop || !s.enabled) return;
+        setServer({ busy: Boolean(s.busy), runningId: s.runningId ?? null, runningAction: s.runningAction ?? null, cooldown: s.cooldown ?? ({} as Record<Action, number>) });
+        // Someone else started a run: watch it rather than showing a refusal.
+        if (s.busy && s.runningId && s.runningAction) follow(s.runningId, s.runningAction);
+      } catch {
+        /* the page still works without the status */
+      }
+    };
+    void read();
+    const id = setInterval(read, 3000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [enabled, follow]);
 
   useEffect(
     () => () => {
@@ -138,6 +192,7 @@ export function Actions({ enabled, videoUrl }: { enabled: boolean; videoUrl?: st
         return;
       }
       setLines(body.lines ?? []);
+      followed.current = body.id;
       poll.current = setInterval(async () => {
         const r = await fetch(`/api/demo/job/${body.id}`);
         if (!r.ok) return;
@@ -160,20 +215,34 @@ export function Actions({ enabled, videoUrl }: { enabled: boolean; videoUrl?: st
   return (
     <div className="panel actions">
       <p className="actions-intro">
-        Each button runs the real pipeline on test networks: a live Chainlink check, a real Cardano payment, a real split.
+        Each button runs the real pipeline on test networks: a live Chainlink check, a real Cardano payment, a real split. One run happens at a time, so if
+        someone else is already running one you will see their progress here.
       </p>
 
       {enabled ? (
         <div className="action-grid">
-          {BUTTONS.map((b) => (
-            <button key={b.action} className={`act ${b.tone ?? ""}`} onClick={() => void run(b.action)} disabled={busy !== null}>
-              <b>
-                {busy === b.action && <span className="spin" aria-hidden />}
-                {b.title}
-              </b>
-              <span>{b.blurb}</span>
-            </button>
-          ))}
+          {BUTTONS.map((b) => {
+            const wait = server?.cooldown?.[b.action] ?? 0;
+            const running = server?.busy ?? busy !== null;
+            const mine = busy === b.action;
+            const blocked = running || wait > 0;
+            const why = mine
+              ? "running…"
+              : running
+                ? "another run is in progress"
+                : wait > 0
+                  ? `ready in ${wait}s`
+                  : b.blurb;
+            return (
+              <button key={b.action} className={`act ${b.tone ?? ""}`} onClick={() => void run(b.action)} disabled={blocked} title={blocked ? why : undefined}>
+                <b>
+                  {mine && <span className="spin" aria-hidden />}
+                  {b.title}
+                </b>
+                <span>{why}</span>
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="readonly">

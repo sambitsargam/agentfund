@@ -85,6 +85,33 @@ export function getJob(id: string): Job | undefined {
   return jobs.get(id);
 }
 
+export interface Status {
+  busy: boolean;
+  /** The run currently holding the lock, so a second visitor can watch it instead of being refused. */
+  runningId: string | null;
+  runningAction: ActionName | null;
+  /** Seconds still to wait, per action. */
+  cooldown: Record<ActionName, number>;
+  spendingLeft: number;
+}
+
+export function status(): Status {
+  const job = running ? jobs.get(running) : undefined;
+  const busy = Boolean(job && job.finishedAt === undefined);
+  const cooldown = {} as Record<ActionName, number>;
+  for (const [name, spec] of Object.entries(SPECS) as [ActionName, Spec][]) {
+    const since = (Date.now() - (lastRun.get(name) ?? 0)) / 1000;
+    cooldown[name] = Math.max(0, Math.ceil(spec.cooldown - since));
+  }
+  return {
+    busy,
+    runningId: busy ? (running ?? null) : null,
+    runningAction: busy ? (job?.action ?? null) : null,
+    cooldown,
+    spendingLeft: Math.max(0, MAX_SPENDING_RUNS - spendingRuns),
+  };
+}
+
 /** One run at a time, a cooldown per action, and a hard cap on runs that spend test money. */
 export function start(action: ActionName): Job {
   const spec = SPECS[action];
