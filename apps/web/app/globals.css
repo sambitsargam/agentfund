@@ -32,14 +32,21 @@ body {
 
 body {
   background: var(--bg);
-  background-image: radial-gradient(900px 500px at 15% -5%, #15202e 0%, transparent 60%),
+  background-image:
+    radial-gradient(900px 500px at 15% -5%, #15202e 0%, transparent 60%),
     radial-gradient(700px 420px at 92% 0%, #231c10 0%, transparent 55%);
   background-repeat: no-repeat;
   color: var(--text);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  font-feature-settings: "tnum" 1, "cv05" 1;
+  font-feature-settings:
+    "tnum" 1,
+    "cv05" 1;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -796,7 +803,10 @@ a {
   color: var(--text);
   font: inherit;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.08s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    transform 0.08s,
+    background 0.15s;
 }
 .act:hover:not(:disabled) {
   border-color: var(--text-3);
@@ -945,7 +955,9 @@ a {
   background: var(--panel-2);
   color: var(--text);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 .btn:hover:not(:disabled) {
   border-color: var(--text-3);
@@ -1073,7 +1085,12 @@ a {
   margin-top: 18px;
   height: 150px;
   border-radius: 12px;
-  background: linear-gradient(90deg, var(--panel-2) 25%, #1f242d 50%, var(--panel-2) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--panel-2) 25%,
+    #1f242d 50%,
+    var(--panel-2) 75%
+  );
   background-size: 300% 100%;
   animation: shimmer 1.3s linear infinite;
 }
@@ -1666,32 +1683,252 @@ a {
 }
 
 /* Compact Task repayment summary; full evidence stays in the disclosure. */
-.task-repayments { margin-bottom: 16px; }
-.repayment-card { padding: 14px 18px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); }
-.repayment-card + .repayment-card { margin-top: 10px; }
-.repayment-heading { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13px; }
-.repayment-heading > span { color: var(--text-2); font-size: 11px; }
-.repayment-trail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 0; margin: 12px 0; list-style: none; }
-.repayment-trail li { border-left: 2px solid var(--line-2); padding-left: 10px; font-size: 12px; min-width: 0; }
-.repayment-trail li.verified { border-color: var(--teal); }
-.repayment-trail b { display: block; margin-bottom: 4px; font-size: 12px; }
-.repayment-trail span, .repayment-trail a { display: block; line-height: 1.6; overflow-wrap: anywhere; }
-.repayment-trail span, .repayment-foot, .repayment-card details { color: var(--text-2); }
-.repayment-trail a { color: var(--teal); font-size: 11px; }
-.repayment-foot { font-size: 11px; }
-.repayment-card details { margin-top: 8px; font-size: 12px; line-height: 1.6; }
-.repayment-card details summary { cursor: pointer; }
-.repayment-card details p { overflow-wrap: anywhere; }
-@media (max-width: 720px) { .repayment-trail { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .repayment-card { padding: 14px; } }
-#tasks { scroll-margin-top: 88px; }
+.task-repayments {
+  margin-bottom: 16px;
+}
+.repayment-card {
+  padding: 14px 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.repayment-card + .repayment-card {
+  margin-top: 10px;
+}
+.repayment-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.repayment-heading > span {
+  color: var(--text-2);
+  font-size: 11px;
+}
+.repayment-trail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0;
+  margin: 12px 0;
+  list-style: none;
+}
+.repayment-trail li {
+  border-left: 2px solid var(--line-2);
+  padding-left: 10px;
+  font-size: 12px;
+  min-width: 0;
+}
+.repayment-trail li.verified {
+  border-color: var(--teal);
+}
+.repayment-trail b {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.repayment-trail span,
+.repayment-trail a {
+  display: block;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.repayment-trail span,
+.repayment-foot,
+.repayment-card details {
+  color: var(--text-2);
+}
+.repayment-trail a {
+  color: var(--teal);
+  font-size: 11px;
+}
+.repayment-foot {
+  font-size: 11px;
+}
+.repayment-card details {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.repayment-card details summary {
+  cursor: pointer;
+}
+.repayment-card details p {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .repayment-trail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .repayment-card {
+    padding: 14px;
+  }
+}
+#tasks {
+  scroll-margin-top: 88px;
+}
 
-.payment-history { border-top: 1px solid var(--line-2); }
-.payment-history > summary { padding: 14px 18px; color: var(--teal); font-size: 13px; cursor: pointer; }
-#payments { scroll-margin-top: 88px; }
+.payment-history {
+  border-top: 1px solid var(--line-2);
+}
+.payment-history > summary {
+  padding: 14px 18px;
+  color: var(--teal);
+  font-size: 13px;
+  cursor: pointer;
+}
+#payments {
+  scroll-margin-top: 88px;
+}
 
-.funding-journey { margin-top: 12px; border-top: 1px solid var(--line-2); padding-top: 12px; font-size: 12px; color: var(--text-2); line-height: 1.65; }
-.funding-journey summary { cursor: pointer; color: var(--teal); }
-.funding-journey ol { padding-left: 18px; }
-.funding-journey li { margin-bottom: 8px; }
-.funding-journey a { color: var(--teal); }
-.funding-journey p { overflow-wrap: anywhere; }
+.funding-journey {
+  margin-top: 12px;
+  border-top: 1px solid var(--line-2);
+  padding-top: 12px;
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.65;
+}
+.funding-journey summary {
+  cursor: pointer;
+  color: var(--teal);
+}
+.funding-journey ol {
+  padding-left: 18px;
+}
+.funding-journey li {
+  margin-bottom: 8px;
+}
+.funding-journey a {
+  color: var(--teal);
+}
+.funding-journey p {
+  overflow-wrap: anywhere;
+}
+
+/* Funding round lifecycle */
+.round {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(233, 185, 73, 0.05),
+    transparent 60%
+  );
+}
+.round-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.round-head > div {
+  min-width: 0;
+}
+.round-head h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.round-head p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.round-badge {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.round-badge.done {
+  border-color: rgba(61, 220, 151, 0.4);
+  background: rgba(61, 220, 151, 0.1);
+  color: var(--good);
+}
+.round-bar {
+  position: relative;
+  height: 24px;
+  margin: 16px 0 14px;
+  border-radius: 6px;
+  background: var(--line);
+  overflow: hidden;
+}
+.round-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #e9b949, #f0a93b);
+}
+.round-bar b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0a0b0d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.round-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.round-steps li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 9px 12px;
+  background: var(--bg);
+  font-size: 12.5px;
+}
+.round-step {
+  color: var(--fg);
+}
+.round-amt {
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.round-more {
+  margin-top: 12px;
+}
+.round-more summary {
+  cursor: pointer;
+  color: var(--dim);
+  font-size: 12px;
+}
+.round-more p {
+  margin: 10px 0 0;
+  max-width: 76ch;
+  color: var(--dim);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+@media (max-width: 640px) {
+  .round-head {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .round-steps li {
+    grid-template-columns: 1fr auto;
+  }
+  .round-steps li a {
+    grid-column: 2;
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "atlas-round-1",
+  "terms": {
+    "operator": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+    "policy": "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9",
+    "name": "0014df10745553444d",
+    "capital": "200000",
+    "bps": 5000,
+    "cap": "300000"
+  },
+  "events": [
+    {
+      "action": "open",
+      "txHash": "2ab175f59d3838671975c52c964c00202370b605f4f7c1ee91359e1e33e60931",
+      "at": "2026-10-06T13:30:24.816Z",
+      "note": "Marker minted, round offered"
+    },
+    {
+      "action": "fund",
+      "txHash": "9bf13ad188b4103ee194a2a66337b70253e3a0420eacdb67481c8e34fe24db25",
+      "at": "2026-10-06T13:31:09.992Z",
+      "note": "Investor paid 0.2 tUSDM; share activated"
+    },
+    {
+      "action": "revenue",
+      "txHash": "77f27c49f6fc5735631644dd1b4185931300e24f7821a4da71f3ed2cf4d7567c",
+      "at": "2026-10-06T13:32:22.109Z",
+      "note": "0.5 tUSDM of agent revenue paid into the round"
+    },
+    {
+      "action": "distribute",
+      "txHash": "39754ce001ef61b3712dce1ff4b138130b67e1ab493378fbd6fe034481099cd2",
+      "at": "2026-10-06T13:33:08.023Z",
+      "note": "Investor repaid 0.25 tUSDM; round active"
+    },
+    {
+      "action": "revenue",
+      "txHash": "0cdb2a62567fdc00bd051a11103c5a9c2319c07d7edb612a03b7d32a4745e04c",
+      "at": "2026-10-06T13:35:30.173Z",
+      "note": "0.5 tUSDM of agent revenue paid into the round"
+    },
+    {
+      "action": "distribute",
+      "txHash": "f30de9c191f82dbbf68215d775689a3f6b6d3d21ed844453975855a3f6ef1527",
+      "at": "2026-10-06T13:36:15.274Z",
+      "note": "Investor repaid 0.05 tUSDM; round closed"
+    },
+    {
+      "action": "revenue",
+      "txHash": "132481ac822baaff45e3a71de1564e8bce41cc80ae4f44e76f4447ef8c0fa88c",
+      "at": "2026-10-06T13:37:00.081Z",
+      "note": "0.4 tUSDM of agent revenue paid into the round"
+    },
+    {
+      "action": "distribute",
+      "txHash": "841fd045b48186b13ffa59536f03c862a9ba4a6ae1af09b406d2794aa5f980a0",
+      "at": "2026-10-06T13:37:31.568Z",
+      "note": "Investor repaid 0 tUSDM; round closed"
+    }
+  ],
+  "seed": {
+    "txHash": "7efa800e3d29f7a4115ab83437c68459d197fd53a6f67b00ee4d0715d26af651",
+    "index": 1
+  },
+  "scriptHash": "e9622685e01c35c101aa21ca9a8fd843545267f5d8dab57cb1959cf9",
+  "address": "addr_test1wr5kyf59uqwrtsgp4gsu4x50mpp4g5n87hvd4dtukx2ee7gxwjlhf"
+}
