@@ -731,7 +731,7 @@ a {
 }
 
 @media (max-width: 620px) {
-  .stats,
+  /* Stats stay two-up on a phone, so the three journeys are reachable without a long scroll. */
   .steps3,
   .foot {
     grid-template-columns: 1fr;
@@ -1930,5 +1930,65 @@ a {
   }
   .round-steps li a {
     grid-column: 2;
+  }
+}
+
+/* Three journeys */
+.views {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 28px 0 24px;
+}
+.view {
+  display: block;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--dim);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.view:hover {
+  border-color: var(--line-2);
+}
+.view b {
+  display: block;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.view span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.view.on {
+  border-color: rgba(233, 185, 73, 0.5);
+  background: linear-gradient(
+    180deg,
+    rgba(233, 185, 73, 0.1),
+    rgba(233, 185, 73, 0.02)
+  );
+}
+.view.on b {
+  color: var(--gold);
+}
+@media (max-width: 760px) {
+  .views {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .view span {
+    display: none;
+  }
+  .view {
+    padding: 11px 14px;
   }
 }

@@ -13,6 +13,7 @@ import {
 import { TaskRepayments } from "./ui/TaskRepayments";
 import { FundingJourney } from "./ui/FundingJourney";
 import { FundingRound } from "./ui/FundingRound";
+import { Views } from "./ui/Views";
 import {
   readAgentIdentity,
   readCoworkerTasks,
@@ -88,12 +89,6 @@ export default async function Home() {
           <div className="brand">
             <span className="glyph">A</span> AgentFund
           </div>
-          <nav>
-            <a href="#check">Who are you paying?</a>
-            <a href="#try">See it happen</a>
-            <a href="#flow">Money flow</a>
-            <a href="#payments">Payments</a>
-          </nav>
           <Live renderedAt={renderedAt} />
         </div>
       </header>
@@ -106,12 +101,10 @@ export default async function Home() {
               automatically.
             </h1>
             <p className="sub">
-              Atlas tells teams and agents who they are about to pay: a person,
-              a contract, or a registered AI agent, and what warnings its
-              recorded history raises. Its backer gets {pct}% of earnings
-              released by the Cardano contract. Agent payments go directly there
-              after a Chainlink check; Sokosumi earnings arrive through a
-              selling-wallet sweep.
+              Atlas is an AI agent that checks who you are about to pay on
+              Cardano &mdash; a person, a contract, or another AI agent. It
+              charges for each check, and a Cardano contract pays its backer{" "}
+              {pct}% of every payment before Atlas receives anything.
             </p>
             <div className="hero-cta">
               <a className="btn primary" href="#check">
@@ -159,14 +152,6 @@ export default async function Home() {
           </ol>
         </section>
 
-        <section className="sec" id="check">
-          <div className="sec-head">
-            <h2>Who are you about to pay?</h2>
-            <p>Free preview of the report Atlas sells</p>
-          </div>
-          <CheckWallet sokosumiUrl={SOKOSUMI_URL} />
-        </section>
-
         <section className="stats">
           <Stat
             k="Payments made"
@@ -192,237 +177,294 @@ export default async function Home() {
           />
         </section>
 
-        <section className="sec" id="try">
-          <div className="sec-head">
-            <h2>See it happen</h2>
-            <p>Real transactions on test networks</p>
-          </div>
-          <Actions
-            enabled={process.env.DEMO_ACTIONS === "on"}
-            videoUrl={VIDEO_URL}
-            subject={DEMO_SUBJECT}
-          />
-        </section>
-
-        <section className="sec" id="flow">
-          <div className="sec-head">
-            <h2>Where the money goes</h2>
-            <p>Read from the investor contract</p>
-          </div>
-          {c ? (
-            <Flow
-              fromAgents={BigInt(c.earnedX402)}
-              fromTeams={BigInt(c.earnedMasumi)}
-              toInvestor={BigInt(c.repaidToInvestor)}
-              toAtlas={toAtlas}
-              waiting={BigInt(c.lockedNow)}
-              investorName="Seed backer"
-              investorPct={pct}
-            />
-          ) : (
-            <div className="panel err">
-              Could not read Cardano{cardano.ok ? "" : `: ${cardano.error}`}
-            </div>
-          )}
-        </section>
-
-        <section className="sec">
-          <div className="cols">
-            <div className="panel panel-pad">
-              <h3 className="card-title">Atlas</h3>
-              <p className="card-sub">
-                Shows Cardano address history and registry claims. Registration
-                does not certify trustworthiness; fraud-detection accuracy
-                remains unvalidated.
-              </p>
-              <Badges identity={identity} rated={Boolean(r)} />
-              {r ? (
+        <Views
+          views={[
+            {
+              id: "check",
+              label: "Check a wallet",
+              hint: "What Atlas does, free to try",
+              content: (
                 <>
-                  <div className="rating">
-                    <div className="score num">
-                      {r.score}
-                      <span>/ 1000</span>
+                  <section className="sec" id="check">
+                    <div className="sec-head">
+                      <h2>Who are you about to pay?</h2>
+                      <p>Free preview of the report Atlas sells</p>
                     </div>
-                    <div className="meta">
-                      New agent, still building a record. The score rises with
-                      real earnings and uptime.
-                    </div>
-                    {r.txHash && (
-                      <a
-                        href={basescan.tx(r.txHash)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Rating written by Chainlink ↗
-                      </a>
-                    )}
-                  </div>
-                  <div className="bars">
-                    {scoreParts(
-                      BigInt(r.earnings),
-                      r.paymentCount,
-                      r.probeOk,
-                      r.latencyMs,
-                    ).map((p) => {
-                      const max = p.label.startsWith("Money")
-                        ? 400
-                        : p.label.startsWith("Payments")
-                          ? 300
-                          : p.label.startsWith("Service")
-                            ? 200
-                            : 100;
-                      return (
-                        <div className="bar-row" key={p.label}>
-                          <span>{p.label.replace(/ \(.*\)/, "")}</span>
-                          <span className="track">
-                            <i
-                              style={{ width: `${(p.points / max) * 100}%` }}
-                            />
-                          </span>
-                          <span className="pts">{p.points}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                    <CheckWallet sokosumiUrl={SOKOSUMI_URL} />
+                  </section>
                 </>
-              ) : (
-                <p className="muted small">
-                  {rating.ok
-                    ? "Not rated yet."
-                    : `Rating unavailable: ${rating.error}`}
-                </p>
-              )}
-            </div>
+              ),
+            },
+            {
+              id: "repay",
+              label: "How the backer gets repaid",
+              hint: "The contract, and a finished round",
+              content: (
+                <>
+                  <section className="sec" id="flow">
+                    <div className="sec-head">
+                      <h2>Where the money goes</h2>
+                      <p>Read from the investor contract</p>
+                    </div>
+                    {c ? (
+                      <Flow
+                        fromAgents={BigInt(c.earnedX402)}
+                        fromTeams={BigInt(c.earnedMasumi)}
+                        toInvestor={BigInt(c.repaidToInvestor)}
+                        toAtlas={toAtlas}
+                        waiting={BigInt(c.lockedNow)}
+                        investorName="Seed backer"
+                        investorPct={pct}
+                      />
+                    ) : (
+                      <div className="panel err">
+                        Could not read Cardano
+                        {cardano.ok ? "" : `: ${cardano.error}`}
+                      </div>
+                    )}
+                  </section>
+                  <section className="sec">
+                    <div className="cols">
+                      <div className="panel panel-pad">
+                        <h3 className="card-title">Atlas</h3>
+                        <p className="card-sub">
+                          Shows Cardano address history and registry claims.
+                          Registration does not certify trustworthiness;
+                          fraud-detection accuracy remains unvalidated.
+                        </p>
+                        <Badges identity={identity} rated={Boolean(r)} />
+                        {r ? (
+                          <>
+                            <div className="rating">
+                              <div className="score num">
+                                {r.score}
+                                <span>/ 1000</span>
+                              </div>
+                              <div className="meta">
+                                New agent, still building a record. The score
+                                rises with real earnings and uptime.
+                              </div>
+                              {r.txHash && (
+                                <a
+                                  href={basescan.tx(r.txHash)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Rating written by Chainlink ↗
+                                </a>
+                              )}
+                            </div>
+                            <div className="bars">
+                              {scoreParts(
+                                BigInt(r.earnings),
+                                r.paymentCount,
+                                r.probeOk,
+                                r.latencyMs,
+                              ).map((p) => {
+                                const max = p.label.startsWith("Money")
+                                  ? 400
+                                  : p.label.startsWith("Payments")
+                                    ? 300
+                                    : p.label.startsWith("Service")
+                                      ? 200
+                                      : 100;
+                                return (
+                                  <div className="bar-row" key={p.label}>
+                                    <span>
+                                      {p.label.replace(/ \(.*\)/, "")}
+                                    </span>
+                                    <span className="track">
+                                      <i
+                                        style={{
+                                          width: `${(p.points / max) * 100}%`,
+                                        }}
+                                      />
+                                    </span>
+                                    <span className="pts">{p.points}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        ) : (
+                          <p className="muted small">
+                            {rating.ok
+                              ? "Not rated yet."
+                              : `Rating unavailable: ${rating.error}`}
+                          </p>
+                        )}
+                      </div>
 
-            <div className="panel panel-pad">
-              <h3 className="card-title">The deal</h3>
-              <p className="card-sub">
-                Written into the contract address, so it cannot be changed after
-                funding.
-              </p>
-              <div className="deal-split">
-                <i style={{ width: `${pct}%`, background: "var(--gold)" }} />
-                <i
-                  style={{ width: `${100 - pct}%`, background: "var(--teal)" }}
-                />
-              </div>
-              <dl className="kv">
-                <dt>Seed backer (test wallet)</dt>
-                <dd className="num">{pct}% of every payment</dd>
-                <dt>Atlas keeps</dt>
-                <dd className="num">{100 - pct}%</dd>
-                <dt>Repaid so far</dt>
-                <dd className="num">
-                  {c ? tusdm(c.repaidToInvestor) : "–"} tUSDM
-                </dd>
-                <dt>Awaiting the next split</dt>
-                <dd className="num">{c ? tusdm(c.lockedNow) : "–"} tUSDM</dd>
-                <dt>Price</dt>
-                <dd>0.50 tUSDM per report · 1 tUSDM per Sokosumi task</dd>
-                <dt>Coworker ID</dt>
-                <dd className="mono">{short(COWORKER_ID)}</dd>
-              </dl>
-              <p className="muted small">
-                Atlas demonstrates one fixed seed deal. Additional agents and
-                investors require a separate deal.
-              </p>
-              <FundingJourney activity={c} />
-            </div>
-          </div>
-          <FundingRound />
-        </section>
+                      <div className="panel panel-pad">
+                        <h3 className="card-title">The deal</h3>
+                        <p className="card-sub">
+                          Written into the contract address, so it cannot be
+                          changed after funding.
+                        </p>
+                        <div className="deal-split">
+                          <i
+                            style={{
+                              width: `${pct}%`,
+                              background: "var(--gold)",
+                            }}
+                          />
+                          <i
+                            style={{
+                              width: `${100 - pct}%`,
+                              background: "var(--teal)",
+                            }}
+                          />
+                        </div>
+                        <dl className="kv">
+                          <dt>Seed backer (test wallet)</dt>
+                          <dd className="num">{pct}% of every payment</dd>
+                          <dt>Atlas keeps</dt>
+                          <dd className="num">{100 - pct}%</dd>
+                          <dt>Repaid so far</dt>
+                          <dd className="num">
+                            {c ? tusdm(c.repaidToInvestor) : "–"} tUSDM
+                          </dd>
+                          <dt>Awaiting the next split</dt>
+                          <dd className="num">
+                            {c ? tusdm(c.lockedNow) : "–"} tUSDM
+                          </dd>
+                          <dt>Price</dt>
+                          <dd>
+                            0.50 tUSDM per report · 1 tUSDM per Sokosumi task
+                          </dd>
+                          <dt>Coworker ID</dt>
+                          <dd className="mono">{short(COWORKER_ID)}</dd>
+                        </dl>
+                        <p className="muted small">
+                          Atlas demonstrates one fixed seed deal. Additional
+                          agents and investors require a separate deal.
+                        </p>
+                        <FundingJourney activity={c} />
+                      </div>
+                    </div>
+                    <FundingRound />
+                  </section>
+                  <section className="sec" id="tasks">
+                    <div className="sec-head">
+                      <h2>Tasks from Sokosumi teams</h2>
+                      <p>Paid through Masumi escrow</p>
+                    </div>
+                    {reliability && (
+                      <p className="muted">
+                        Observed paid Task attempts:{" "}
+                        {reliability.paidCollectionsVerified} collected ·{" "}
+                        {reliability.paidTasksFailed} failed ·{" "}
+                        {reliability.paidTasksOngoing} ongoing. Includes
+                        historical failures; this sample does not establish
+                        marketplace reliability.
+                      </p>
+                    )}
+                    <TaskRepayments tasks={tasks} repayments={repayments} />
+                    <div className="panel overflow">
+                      <TaskTable tasks={tasks} now={renderedAt} />
+                    </div>
+                  </section>
 
-        <section className="sec" id="payments">
-          <div className="sec-head">
-            <h2>Payments by AI agents</h2>
-            <p>
-              {count("ALLOW")} allowed · {count("DENY")} blocked ·{" "}
-              {count("REVIEW")} held
-            </p>
-          </div>
-          <div className="panel overflow">
-            {!decisions.ok ? (
-              <div className="err">
-                Could not read Chainlink decisions: {decisions.error}
-              </div>
-            ) : ds.length === 0 ? (
-              <div className="empty">No agent has asked to pay Atlas yet.</div>
-            ) : (
-              <>
-                <AgentTable
-                  decisions={ds.slice(0, 5)}
-                  payments={c?.payments ?? []}
-                />
-                {ds.length > 5 && (
-                  <details className="payment-history">
-                    <summary>View {ds.length - 5} earlier payments</summary>
-                    <AgentTable
-                      decisions={ds.slice(5)}
-                      payments={c?.payments ?? []}
+                  <footer className="foot">
+                    <div>
+                      <h4>On Cardano preprod</h4>
+                      <p>
+                        Investor contract{" "}
+                        <a
+                          className="mono"
+                          href={cardanoscan.address(SPLITTER)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {short(SPLITTER)} ↗
+                        </a>
+                      </p>
+                    </div>
+                    <div>
+                      <h4>On Base Sepolia</h4>
+                      <p>
+                        Ratings and payment checks{" "}
+                        <a
+                          className="mono"
+                          href={basescan.address(REGISTRY)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {short(REGISTRY)} ↗
+                        </a>
+                      </p>
+                    </div>
+                    <div>
+                      <h4>About this page</h4>
+                      <p>
+                        Every figure is read live from public blockchains. Test
+                        networks and test money only.
+                      </p>
+                    </div>
+                  </footer>
+                </>
+              ),
+            },
+            {
+              id: "proof",
+              label: "Try it live",
+              hint: "Run a real payment, or block one",
+              content: (
+                <>
+                  <section className="sec" id="try">
+                    <div className="sec-head">
+                      <h2>See it happen</h2>
+                      <p>Real transactions on test networks</p>
+                    </div>
+                    <Actions
+                      enabled={process.env.DEMO_ACTIONS === "on"}
+                      videoUrl={VIDEO_URL}
+                      subject={DEMO_SUBJECT}
                     />
-                  </details>
-                )}
-              </>
-            )}
-          </div>
-        </section>
-
-        <section className="sec" id="tasks">
-          <div className="sec-head">
-            <h2>Tasks from Sokosumi teams</h2>
-            <p>Paid through Masumi escrow</p>
-          </div>
-          {reliability && (
-            <p className="muted">
-              Observed paid Task attempts: {reliability.paidCollectionsVerified}{" "}
-              collected · {reliability.paidTasksFailed} failed ·{" "}
-              {reliability.paidTasksOngoing} ongoing. Includes historical
-              failures; this sample does not establish marketplace reliability.
-            </p>
-          )}
-          <TaskRepayments tasks={tasks} repayments={repayments} />
-          <div className="panel overflow">
-            <TaskTable tasks={tasks} now={renderedAt} />
-          </div>
-        </section>
-
-        <footer className="foot">
-          <div>
-            <h4>On Cardano preprod</h4>
-            <p>
-              Investor contract{" "}
-              <a
-                className="mono"
-                href={cardanoscan.address(SPLITTER)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {short(SPLITTER)} ↗
-              </a>
-            </p>
-          </div>
-          <div>
-            <h4>On Base Sepolia</h4>
-            <p>
-              Ratings and payment checks{" "}
-              <a
-                className="mono"
-                href={basescan.address(REGISTRY)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {short(REGISTRY)} ↗
-              </a>
-            </p>
-          </div>
-          <div>
-            <h4>About this page</h4>
-            <p>
-              Every figure is read live from public blockchains. Test networks
-              and test money only.
-            </p>
-          </div>
-        </footer>
+                  </section>
+                  <section className="sec" id="payments">
+                    <div className="sec-head">
+                      <h2>Payments by AI agents</h2>
+                      <p>
+                        {count("ALLOW")} allowed · {count("DENY")} blocked ·{" "}
+                        {count("REVIEW")} held
+                      </p>
+                    </div>
+                    <div className="panel overflow">
+                      {!decisions.ok ? (
+                        <div className="err">
+                          Could not read Chainlink decisions: {decisions.error}
+                        </div>
+                      ) : ds.length === 0 ? (
+                        <div className="empty">
+                          No agent has asked to pay Atlas yet.
+                        </div>
+                      ) : (
+                        <>
+                          <AgentTable
+                            decisions={ds.slice(0, 5)}
+                            payments={c?.payments ?? []}
+                          />
+                          {ds.length > 5 && (
+                            <details className="payment-history">
+                              <summary>
+                                View {ds.length - 5} earlier payments
+                              </summary>
+                              <AgentTable
+                                decisions={ds.slice(5)}
+                                payments={c?.payments ?? []}
+                              />
+                            </details>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </section>
+                </>
+              ),
+            },
+          ]}
+        />
       </main>
     </>
   );
