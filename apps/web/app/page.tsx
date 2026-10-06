@@ -2,6 +2,7 @@ import { ATLAS_DEAL, basescan, cardanoscan } from "@agentfund/shared";
 import { COWORKER_ID, REGISTRY, SPLITTER, readCardano, readDecisions, readRating, type Decision, type Payment } from "../lib/chain";
 import { readCoworkerTasks, type CoworkerTask } from "../lib/sokosumi";
 import { ago, flagWords, scoreParts, short, tusdm } from "../lib/present";
+import { Actions } from "./ui/Actions";
 import { Flow } from "./ui/Flow";
 import { Live } from "./ui/Live";
 
@@ -39,6 +40,7 @@ export default async function Home() {
             <span className="glyph">A</span> AgentFund
           </div>
           <nav>
+            <a href="#try">Try it</a>
             <a href="#flow">Money flow</a>
             <a href="#payments">Payments</a>
             <a href="#tasks">Tasks</a>
@@ -112,6 +114,10 @@ export default async function Home() {
             </div>
             <div className="s">before any money moved</div>
           </div>
+        </section>
+
+        <section className="sec" id="try">
+          <Actions enabled={process.env.DEMO_ACTIONS === "on"} />
         </section>
 
         <section className="sec" id="flow">
