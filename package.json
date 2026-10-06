@@ -12,7 +12,8 @@
   },
   "scripts": {
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "start": "bash scripts/railway-start.sh"
   },
   "devDependencies": {
     "@types/node": "22.10.0",
