@@ -1,8 +1,21 @@
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import { config } from "dotenv";
-import { Address, Assets, Client, TransactionHash, preprod } from "@evolution-sdk/evolution";
-import { ATLAS_DEAL, BLOCKFROST_PREPROD_URL, TUSDM_MASUMI_UNIT, TUSDM_X402_UNIT, cardanoscan, formatTusdm } from "@agentfund/shared";
+import {
+  Address,
+  Assets,
+  Client,
+  TransactionHash,
+  preprod,
+} from "@evolution-sdk/evolution";
+import {
+  ATLAS_DEAL,
+  BLOCKFROST_PREPROD_URL,
+  TUSDM_MASUMI_UNIT,
+  TUSDM_X402_UNIT,
+  cardanoscan,
+  formatTusdm,
+} from "@agentfund/shared";
 import { buildSplitter } from "@agentfund/cardano-tx";
 
 config({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
@@ -30,13 +43,32 @@ const client = Client.make(preprod)
   .withSeed({ mnemonic, accountIndex: 0 });
 
 const self = await client.address();
-const dataDir = process.env.COWORKER_DATA_DIR ?? fileURLToPath(new URL("../../coworker/data", import.meta.url));
-const registration = JSON.parse(readFileSync(`${dataDir}/registration.json`, "utf8")) as { payoutAddress?: string };
-if (!registration.payoutAddress || Address.toBech32(self) !== registration.payoutAddress) {
-  throw new Error("the sweep wallet does not match the registered Masumi payout address; refusing to sign");
+// The expected payout address may come from the registration file the worker writes, or,
+// when the keeper runs on a host that does not share that worker's disk, from configuration.
+// Either way an unverified wallet never signs.
+function registeredPayoutAddress(): string {
+  const configured = process.env.MASUMI_PAYOUT_ADDRESS;
+  if (configured) return configured;
+  const dataDir =
+    process.env.COWORKER_DATA_DIR ??
+    fileURLToPath(new URL("../../coworker/data", import.meta.url));
+  const registration = JSON.parse(
+    readFileSync(`${dataDir}/registration.json`, "utf8"),
+  ) as { payoutAddress?: string };
+  if (!registration.payoutAddress)
+    throw new Error(
+      "the registration file records no Masumi payout address; refusing to sign",
+    );
+  return registration.payoutAddress;
+}
+if (Address.toBech32(self) !== registeredPayoutAddress()) {
+  throw new Error(
+    "the sweep wallet does not match the registered Masumi payout address; refusing to sign",
+  );
 }
 const utxos = await client.getUtxos(self);
-const held = (unit: string) => utxos.reduce((sum, u) => sum + Assets.getByUnit(u.assets, unit), 0n);
+const held = (unit: string) =>
+  utxos.reduce((sum, u) => sum + Assets.getByUnit(u.assets, unit), 0n);
 const masumi = held(TUSDM_MASUMI_UNIT);
 const x402 = held(TUSDM_X402_UNIT);
 
@@ -44,8 +76,20 @@ if (masumi === 0n && x402 === 0n) {
   console.log(`nothing to sweep from ${Address.toBech32(self)}`);
 } else {
   let assets = Assets.zero;
-  if (masumi > 0n) assets = Assets.addByHex(assets, TUSDM_MASUMI_UNIT.slice(0, 56), TUSDM_MASUMI_UNIT.slice(56), masumi);
-  if (x402 > 0n) assets = Assets.addByHex(assets, TUSDM_X402_UNIT.slice(0, 56), TUSDM_X402_UNIT.slice(56), x402);
+  if (masumi > 0n)
+    assets = Assets.addByHex(
+      assets,
+      TUSDM_MASUMI_UNIT.slice(0, 56),
+      TUSDM_MASUMI_UNIT.slice(56),
+      masumi,
+    );
+  if (x402 > 0n)
+    assets = Assets.addByHex(
+      assets,
+      TUSDM_X402_UNIT.slice(0, 56),
+      TUSDM_X402_UNIT.slice(56),
+      x402,
+    );
 
   const built = await client
     .newTx()
