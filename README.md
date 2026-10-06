@@ -24,7 +24,3 @@ services/keeper     batches splitter UTxOs and distributes them
 apps/web            dashboard
 docs/               architecture, write-up, methodology, evidence, threat model
 ```
-
-## Provenance
-
-Work began on 5 October 2026 with the organisers' approval. That day's setup spikes (toolchain, wallets, x402 starter, a first Aiken validator, CRE hello-world and Blockfrost reads) live in a separate repository. This repository starts at the hackathon build; code carried over from the spikes was rewritten and is credited in `docs/BUILD_LOG.md`.
