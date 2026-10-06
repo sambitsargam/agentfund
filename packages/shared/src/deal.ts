@@ -9,7 +9,8 @@ export interface DealTerms {
 }
 
 /** Current registered preprod collection wallet; override after a registration migration. */
-export const ATLAS_MASUMI_PAYOUT_ADDRESS = "addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf";
+export const ATLAS_MASUMI_PAYOUT_ADDRESS =
+  "addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf";
 
 export const ATLAS_DEAL: DealTerms = {
   agentId: "atlas",
@@ -23,4 +24,30 @@ export const ATLAS_DEAL: DealTerms = {
       bps: 1000,
     },
   ],
+};
+
+/**
+ * A funding round's terms. Unlike {@link ATLAS_DEAL}, where the investor's share is a fixed
+ * script parameter, a round is a lifecycle: the share activates only once the investor's
+ * capital reaches the operator, and it stops once cumulative payouts reach the cap. Terms and
+ * the seed reference together determine the round's address, so neither can change afterwards.
+ */
+export interface RoundTermsConfig {
+  operator: string;
+  /** Governed asset. Capital, payouts and the cap are all denominated in it. */
+  policy: string;
+  name: string;
+  capital: string;
+  bps: number;
+  cap: string;
+}
+
+/** 0.20 tUSDM for half of Atlas's x402 earnings, until 0.30 tUSDM has been repaid. */
+export const ATLAS_ROUND_TERMS: RoundTermsConfig = {
+  operator: ATLAS_DEAL.atlasAddress,
+  policy: "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9",
+  name: "0014df10745553444d",
+  capital: "200000",
+  bps: 5000,
+  cap: "300000",
 };
