@@ -12,7 +12,8 @@
   "dependencies": {
     "@agentfund/shared": "0.1.0",
     "dotenv": "16.4.7",
-    "express": "4.21.2"
+    "express": "4.21.2",
+    "@agentfund/cardano-tx": "0.1.0"
   },
   "devDependencies": {
     "@types/express": "4.17.21"

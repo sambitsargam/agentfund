@@ -263,6 +263,7 @@ export function Actions({
   const [elapsed, setElapsed] = useState(0);
   const [runId, setRunId] = useState<string | null>(null);
   const [showLog, setShowLog] = useState(false);
+  const [runnerOnline, setRunnerOnline] = useState(false);
   const [server, setServer] = useState<{
     busy: boolean;
     runningId: string | null;
@@ -342,7 +343,8 @@ export function Actions({
           cooldown?: Record<Action, number>;
           automaticKeeper?: boolean;
         };
-        if (stop || !s.enabled) return;
+        if (stop) return;
+        setRunnerOnline(Boolean(s.enabled));
         setServer({
           busy: Boolean(s.busy),
           runningId: s.runningId ?? null,
@@ -353,9 +355,7 @@ export function Actions({
         // Someone else started a run: watch it rather than showing a refusal.
         if (s.busy && s.runningId && s.runningAction)
           follow(s.runningId, s.runningAction);
-      } catch {
-        /* the page still works without the status */
-      }
+      } catch { setRunnerOnline(false); }
     };
     void read();
     const id = setInterval(read, 3000);
@@ -432,9 +432,9 @@ export function Actions({
       <div className="actions-intro">
         <p>
           <b>These buttons spend real money on test networks.</b> Nothing here
-          is a simulation or a recording: each one builds a transaction, signs
-          it and waits for Cardano or Base Sepolia to accept it, which takes
-          twenty to sixty seconds.
+          is a prerecorded result. Chainlink runs through the CRE simulator with
+          real Base Sepolia writes; allowed payments use Cardano preprod.
+          A run can take several minutes.
         </p>
         <p>
           The first button is how Atlas actually earns. Another AI agent pays it
@@ -445,6 +445,7 @@ export function Actions({
           working, not failing.
         </p>
         <p className="muted small">
+          The live runner is connected from the operator’s Mac and requires it to stay awake.
           Only one run can happen at a time. If a button says another run is in
           progress, someone else is using it and their steps will appear below
           as they happen.
@@ -459,8 +460,8 @@ export function Actions({
             const mine = busy === b.action;
             const automatic =
               b.action === "distribute" && server?.automaticKeeper;
-            const blocked = running || wait > 0 || Boolean(automatic);
-            const why = automatic
+            const blocked = !runnerOnline || running || wait > 0 || Boolean(automatic);
+            const why = !runnerOnline ? "Live runner unavailable" : automatic
               ? "Automatic repayment is active"
               : mine
                 ? "running…"

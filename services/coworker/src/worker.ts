@@ -63,12 +63,14 @@ export type Stage =
   | "completed"
   | "awaiting-withdrawal"
   | "settled"
+  | "needs-recovery"
   | "failed";
 
 export interface TaskState {
   taskId: string;
   input: string;
   stage: Stage;
+  marketplaceStatus?: string;
   paid: boolean;
   startedAt: string;
   nonce?: string;
@@ -233,22 +235,61 @@ export class CoworkerWorker {
 
   async advance(task: CoreTask): Promise<void> {
     let state = this.deps.store.read(task.id);
+    // A safety stop is not a marketplace failure. Preserve payment state; never auto-retry it.
+    if (state) {
+      const recovery =
+        state.stage === "failed" &&
+        (state.error?.startsWith(
+          "local state is missing for a paid RUNNING Task",
+        ) ||
+          state.error?.startsWith("interrupted during "));
+      if (recovery || state.marketplaceStatus !== task.status)
+        state = this.save({
+          ...state,
+          marketplaceStatus: task.status,
+          ...(recovery ? { stage: "needs-recovery" as const } : {}),
+        });
+    }
     if (!state) {
       // A paid RUNNING Task without local state may already have signed terms or funded escrow.
       // Inspect it before creating another purchase. Unpaid Tasks can be resumed safely.
       if (task.status !== "READY" && task.status !== "RUNNING") return;
+      // Two workers sharing one Coworker identity both see READY and both claim it; the loser's
+      // payment terms are rejected and it records a failure that never happened. Re-reading
+      // immediately before claiming closes most of that window — but run only one worker.
+      if (task.status === "READY") {
+        const current = await this.deps.core
+          .get<CoreTask>(`/v1/tasks/${task.id}`)
+          .catch(() => null);
+        // Only a well-formed task with a different status proves a rival claim; anything else
+        // is treated as no evidence, because refusing work on a bad read is worse.
+        if (
+          current &&
+          typeof current.status === "string" &&
+          current.id === task.id &&
+          current.status !== "READY"
+        ) {
+          this.deps.log(
+            `task ${task.id}: already claimed elsewhere (${current.status}); leaving it alone`,
+          );
+          return;
+        }
+      }
       state = this.save({
         taskId: task.id,
         input: task.description ?? task.name,
         stage: "new",
+        marketplaceStatus: task.status,
         paid: this.paidEnabled,
         startedAt: new Date(this.now()).toISOString(),
       });
       if (task.status === "RUNNING" && state.paid) {
-        this.fail(
-          state,
-          "local state is missing for a paid RUNNING Task; inspect existing payment events before resuming",
-        );
+        this.save({
+          ...state,
+          stage: "needs-recovery",
+          error:
+            "local state is missing for a paid RUNNING Task; inspect existing payment events before resuming",
+        });
         return;
       }
       if (task.status === "READY") {
@@ -474,10 +515,11 @@ export class CoworkerWorker {
       case "submit-pending":
       case "complete-pending":
         // The previous run stopped mid-write; its outcome is unknown, so a person checks before anything is retried.
-        return this.fail(
-          s,
-          `interrupted during ${s.stage}; inspect the Task and payment before retrying`,
-        );
+        return this.save({
+          ...s,
+          stage: "needs-recovery",
+          error: `interrupted during ${s.stage}; inspect the Task and payment before retrying`,
+        });
       default:
         return s;
     }

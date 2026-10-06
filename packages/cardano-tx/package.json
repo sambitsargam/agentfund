@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./funding-service": "./src/funding-service.ts",
-    "./funding-types": "./src/funding-types.ts"
+    "./funding-types": "./src/funding-types.ts",
+    "./funding-http": "./src/funding-http.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -15,6 +16,10 @@
   },
   "dependencies": {
     "@agentfund/shared": "0.1.0",
-    "@evolution-sdk/evolution": "0.5.16"
+    "@evolution-sdk/evolution": "0.5.16",
+    "express": "4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "4.17.21"
   }
 }

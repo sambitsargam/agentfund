@@ -99,7 +99,7 @@ describe("restart safety", () => {
     const id = "01a11029-b431-74cd-945c-fac56d1fe53f";
     await worker.advance({ id, status: "RUNNING", name: "check", description: "is this safe?" });
     expect(posted).toEqual([]);
-    expect(store.read(id)).toMatchObject({ stage: "failed", error: expect.stringContaining("local state is missing") });
+    expect(store.read(id)).toMatchObject({ stage: "needs-recovery", marketplaceStatus: "RUNNING", error: expect.stringContaining("local state is missing") });
   });
 
   it.each(["terms-pending", "payment-pending", "submit-pending", "complete-pending"] as const)("does not repeat an interrupted %s write", async (stage) => {
@@ -114,7 +114,7 @@ describe("restart safety", () => {
     });
     await worker.advance({ id, status: "RUNNING", name: "check", description: "check" });
     expect(posted).toEqual([]);
-    expect(store.read(id)?.stage).toBe("failed");
+    expect(store.read(id)?.stage).toBe("needs-recovery");
   });
 
   it("adopts a RUNNING task whose local state was lost, without re-posting RUNNING", async () => {

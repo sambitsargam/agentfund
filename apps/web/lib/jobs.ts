@@ -1,4 +1,3 @@
-import "server-only";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";

@@ -357,7 +357,7 @@ export default async function Home() {
                         Observed paid Task attempts:{" "}
                         {reliability.paidCollectionsVerified} collected ·{" "}
                         {reliability.paidTasksFailed} failed ·{" "}
-                        {reliability.paidTasksOngoing} ongoing. Includes
+                        {reliability.paidTasksOngoing} ongoing. {reliability.paidTasksNeedingRecovery ? `${reliability.paidTasksNeedingRecovery} need worker recovery; no payment is being retried. ` : ""}Includes
                         historical failures; this sample does not establish
                         marketplace reliability.
                       </p>
@@ -666,7 +666,8 @@ const STAGE: Record<string, string> = {
   completed: "Report delivered",
   "awaiting-withdrawal": "Delivered · dispute window open",
   settled: "Paid out",
-  failed: "Needs attention",
+  failed: "Failed",
+  "needs-recovery": "Ongoing · needs recovery",
 };
 
 function TaskTable({
@@ -699,7 +700,7 @@ function TaskTable({
           <tr key={t.taskId}>
             <td data-l="Task">
               <div className="title-cell">
-                {STAGE[t.stage] ?? t.stage}
+                {STAGE[t.stage] ?? t.stage}{t.sourceStale ? " · last known progress (worker offline)" : ""}
                 <small>
                   {ago(Date.parse(t.startedAt) / 1000)} · task{" "}
                   <span className="mono">{short(t.taskId)}</span>
@@ -709,7 +710,7 @@ function TaskTable({
             <td data-l="Payment">
               {t.paid ? (
                 <Tick state={t.onChainState ? "done" : "wait"}>
-                  {t.onChainState ? `Escrow: ${t.onChainState}` : "Requested"}
+                  {t.onChainState ? `Escrow: ${t.onChainState}` : t.stage === "needs-recovery" ? "Awaiting verification" : "Requested"}
                 </Tick>
               ) : (
                 <Tick state="none">Free trial run</Tick>
@@ -729,7 +730,7 @@ function TaskTable({
                 <Tick state={t.stage === "failed" ? "none" : "wait"}>
                   {t.stage === "failed"
                     ? "Stopped; inspect task state"
-                    : "In progress"}
+                    : t.stage === "needs-recovery" ? "Worker recovery required" : "In progress"}
                 </Tick>
               )}
             </td>

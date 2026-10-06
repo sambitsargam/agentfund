@@ -2,6 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import express from "express";
+import { TaskFeed } from "./task-feed.js";
+import { demoApi } from "./demo-api.js";
+import { fundingApi } from "@agentfund/cardano-tx/funding-http";
 import { CoreClient, MpsClient } from "./clients.js";
 import { TaskStore } from "./store.js";
 import { CoworkerWorker, type Registration, type TaskState } from "./worker.js";
@@ -45,9 +48,12 @@ const worker = new CoworkerWorker({
   log: (msg) => console.log(new Date().toISOString(), msg),
 });
 
+const taskFeed = new TaskFeed(`${dataDir}/mirrored-progress.json`);
 const app = express();
+app.use("/funding", fundingApi());
+app.use("/demo", demoApi(`${dataDir}/demo`, process.env.DEMO_API_TOKEN, raw => taskFeed.update(raw)));
 app.get("/reliability", (_req, res) =>
-  res.json(summarizeReliability(store.all().map((t) => t.state))),
+  res.json(summarizeReliability(publicTasks().map(t => ({ ...t, input: "", settlement: t.collectionTx ? { verified: true, txHash: t.collectionTx } : undefined })) as TaskState[])),
 );
 app.get("/health", (_req, res) => {
   const stale =
@@ -82,15 +88,13 @@ app.get("/agent", (_req, res) => {
   });
 });
 
-// Public progress feed for the dashboard. Task inputs and results stay private.
-app.get("/tasks", (_req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.json(
-    store
+// Public progress feed only; mirrored records never execute payments on this worker.
+function publicTasks() { return taskFeed.merge(store
       .all()
       .map(({ state: s }) => ({
         taskId: s.taskId,
         stage: s.stage,
+        marketplaceStatus: s.marketplaceStatus ?? null,
         paid: s.paid,
         delivered: s.delivered ?? null,
         startedAt: s.startedAt,
@@ -106,9 +110,9 @@ app.get("/tasks", (_req, res) => {
         collectedAtomicUnits: s.settlement?.netAtomicUnits ?? null,
         collectionAddress: registration?.payoutAddress ?? null,
         error: s.error ?? null,
-      }))
-      .sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
-  );
+      }))); }
+app.get("/tasks", (_req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*"); res.json(publicTasks());
 });
 app.listen(Number(process.env.PORT ?? process.env.COWORKER_PORT ?? 4030));
 

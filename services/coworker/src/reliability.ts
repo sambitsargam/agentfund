@@ -6,6 +6,7 @@ export function summarizeReliability(tasks: TaskState[], now = Date.now()) {
   const ongoing = paid.filter(t => !["settled", "failed"].includes(t.stage));
   return { observedAt: new Date(now).toISOString(), paidTasksSeen: paid.length, paidCollectionsVerified: verified.length,
     paidTasksFailed: failed.length, paidTasksOngoing: ongoing.length,
+    paidTasksNeedingRecovery: paid.filter(t => t.stage === "needs-recovery").length,
     paidTasksWithDeliveredReport: paid.filter(t => t.delivered && t.completionEventId).length,
     staleOngoing: ongoing.filter(t => !t.updatedAt || now - Date.parse(t.updatedAt) > 120000).length,
     successFractionAmongTerminal: verified.length + failed.length ? verified.length / (verified.length + failed.length) : null,

@@ -47,3 +47,8 @@ describe("paid lifecycle under repeated restarts (simulated services)", () => {
     expect(JSON.stringify(r)).not.toContain("private");
   });
 });
+
+it("counts a recovery stop as ongoing, not a failed marketplace Task", () => {
+  const r = summarizeReliability([{ taskId: "id", input: "private", paid: true, startedAt: "date", stage: "needs-recovery", marketplaceStatus: "RUNNING" }]);
+  expect(r).toMatchObject({ paidTasksFailed: 0, paidTasksOngoing: 1, paidTasksNeedingRecovery: 1, successFractionAmongTerminal: null });
+});

@@ -213,3 +213,12 @@ Three things worth recording:
 
 `npm run round -w @agentfund/keeper -- verify` re-derives every net flow from Blockfrost and
 refuses to write its evidence file if repayments ever exceed the cap.
+
+### 7 October 2026 — review of Claude and hosted funding completion
+
+- Reviewed Claude's commits through dc1cc0c and independently reverified the product round f603a10c: 0.20 tUSDM capital, two 0.50 tUSDM test-buyer purchases, 0.25 + 0.05 investor payouts, closed at the 0.30 cap. No payments repeated. This is internal testnet evidence, not external demand validation.
+- Found public Vercel /api/funding returning HTML 500: filesystem-backed transaction preparation cannot use independent serverless storage. Shared the unsigned funding service through authenticated HTTP on Coworker's existing /data volume. Atlas reads the same round catalog; Vercel forwards server-side requests. Shared credentials remain server-only; public config seeds only the verified round.
+- Railway declined a fourth volume; no volume was created or removed. Used existing Coworker volume at /data/funding. Directly deployed Coworker 787ba2d5-265a-4064-91a0-425ee54dd771, Atlas d32c3cfa-482c-4d17-a3b7-209f94cbd063 and Vercel dpl_6ASLkvSqMHCY9F8qJDzrRQX6af6x from a clean release without local secrets/runtime journals. No Git commit or push by Codex.
+- Verification: 145 tests passed (142 workspace suite plus 3 remote-catalog tests), workspace typecheck and production build passed, x402 stays pinned at 2.26.0. Live public funding GET and wallet-address validation POST return 200; unauthenticated backend returns 401; Atlas returns 402 with exactly the round address, 500000 asset units, cardano:preprod and HTTPS resource URL. Worker health remains OK. Browser confirms closed round and selected funding tab survives reload. Screenshot: docs/screenshots/hosted-funding.png.
+- Cardano sources: previously consulted build-transaction and write-validator skills under /Users/sambit/Documents/cardano-dev-skills/skills, with bundled Evolution wallet-layer/API-wallet documentation. This follow-up changes hosting/catalog transport, not validator behavior.
+- Limits: no fresh browser-extension signature test (preview has no wallet); round-specific x402 remains outside the legacy Chainlink gate; Masumi still needs operator sweep. Hosted worker currently displays two failed paid Tasks; no retry/payment triggered here. Broader external UX/impact validation, second service, DON deployment and final submission assets are not claimed complete.

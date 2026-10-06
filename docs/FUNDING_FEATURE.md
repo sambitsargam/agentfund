@@ -32,7 +32,7 @@ is neither guaranteed repayment nor evidence of future demand.
   locates its blueprint by walking parent directories. For a packaged deployment, include
   `contracts/cardano/plutus.json` and set `AGENTFUND_ROOT`.
 - `FUNDING_DATA_DIR` optionally relocates the shared durable round/ticket/purchase store.
-  Both Atlas and the dashboard must use the same store. Default: `services/keeper/data/funding`.
+  Locally, both Atlas and the dashboard must use the same store. Hosted services use the authenticated funding API described below. Default: `services/keeper/data/funding`.
 - `ATLAS_PUBLIC_URL` controls the round endpoint displayed in the dashboard; `ATLAS_URL`
   controls the buyer CLI. Use the actual Atlas service origin, not the dashboard origin.
 - Open the dashboard in a browser with a Cardano wallet extension; the Codex preview does
@@ -72,11 +72,12 @@ substitute for third-party usability studies, customer demand, or a production s
 
 ## Hosted funding (7 October completion)
 
-The Vercel dashboard forwards `/api/funding` to Atlas's persistent `/funding` API.
-Set `FUNDING_API_URL=https://<atlas-host>/funding` and `FUNDING_API_TOKEN` on Vercel;
-set the same token on Atlas. The token remains server-only. Atlas owns the round and
+The Vercel dashboard forwards `/api/funding` to the Coworker host's persistent `/funding` API.
+Set `FUNDING_API_URL=https://<coworker-host>/funding` on Vercel and Atlas;
+set `FUNDING_API_TOKEN` on Vercel;
+set the same token on Atlas and Coworker. The token remains server-only. The Coworker host owns the round and
 proposal store on its attached volume (`FUNDING_DATA_DIR=/data/funding`). The paid round
-routes read that same store, so a new funded offer is immediately available to customers.
+routes read that same store through the authenticated catalog API, so a new funded offer is immediately available to customers.
 Do not put this store on Vercel's ephemeral filesystem or on independent service disks.
 
 If the backend is missing or unreachable, the dashboard returns a clear 503 and preserves

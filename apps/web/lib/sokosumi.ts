@@ -3,6 +3,8 @@ import "server-only";
 export interface CoworkerTask {
   taskId: string;
   stage: string;
+  marketplaceStatus?: string | null;
+  sourceStale?: boolean;
   paid: boolean;
   delivered: boolean | null;
   startedAt: string;
@@ -55,6 +57,7 @@ export interface ReliabilitySnapshot {
   paidCollectionsVerified: number;
   paidTasksFailed: number;
   paidTasksOngoing: number;
+  paidTasksNeedingRecovery?: number;
   scope: string;
 }
 export async function readReliability(): Promise<ReliabilitySnapshot | null> {
