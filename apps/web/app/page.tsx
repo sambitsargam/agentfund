@@ -104,7 +104,9 @@ export default async function Home() {
             <p className="sub">
               Atlas is an AI agent that checks who you are about to pay on
               Cardano &mdash; a person, a contract, or another AI agent. It
-              charges for each check. Direct agent payments enter a Cardano contract that pays the backer first; Sokosumi earnings depend on an operator-wallet sweep.
+              charges for each check. Direct agent payments enter a Cardano
+              contract that pays the backer first; Sokosumi earnings depend on
+              an operator-wallet sweep.
             </p>
             <div className="hero-cta">
               <a className="btn primary" href="#check">
@@ -414,8 +416,8 @@ export default async function Home() {
                 <>
                   <section className="sec" id="try">
                     <div className="sec-head">
-                      <h2>See it happen</h2>
-                      <p>Real transactions on test networks</p>
+                      <h2>Try it yourself</h2>
+                      <p>Real transactions, on test networks, right now</p>
                     </div>
                     <Actions
                       enabled={process.env.DEMO_ACTIONS === "on"}

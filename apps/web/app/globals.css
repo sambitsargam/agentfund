@@ -1522,10 +1522,20 @@ a {
 }
 
 .actions-intro {
-  margin: 0 0 16px;
+  margin: 0 0 18px;
+  max-width: 76ch;
+}
+.actions-intro p {
+  margin: 0 0 9px;
   font-size: 13.5px;
+  line-height: 1.6;
   color: var(--text-2);
-  max-width: 70ch;
+}
+.actions-intro p:last-child {
+  margin-bottom: 0;
+}
+.actions-intro b {
+  color: var(--text);
 }
 
 @media (max-width: 900px) {
