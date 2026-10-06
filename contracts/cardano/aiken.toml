@@ -1,0 +1,21 @@
+name = "agentfund/splitter"
+version = "0.1.0"
+compiler = "v1.1.24"
+plutus = "v3"
+license = "Apache-2.0"
+description = "Revenue-share splitter: every payment to an agent is divided between its investors and the agent on spend."
+
+[repository]
+user = "sambitsargam"
+project = "agentfund"
+platform = "github"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v3.1.0"
+source = "github"
+
+[[dependencies]]
+name = "aiken-lang/fuzz"
+version = "v2.2.0"
+source = "github"
