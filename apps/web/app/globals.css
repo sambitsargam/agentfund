@@ -1992,3 +1992,12 @@ a {
     padding: 11px 14px;
   }
 }
+
+/* Funding is a focused wallet journey; evidence remains below it. */
+.fund-wallet,.fund-buttons{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}
+.fund-wallet select,.fund-fields input{font:inherit;padding:10px;border:1px solid #c8c8c8;border-radius:8px;background:transparent;color:inherit;max-width:100%}
+.fund-cards{display:grid;gap:16px;margin:24px 0}.fund-cards .panel{padding:24px}
+.fund-facts{display:flex;gap:24px;flex-wrap:wrap;margin:20px 0}.fund-facts dt{font-size:12px;opacity:.65}.fund-facts dd{margin:5px 0;font-weight:650}
+.fund-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}.fund-fields label{display:grid;gap:8px}
+.fund-message,.fund-review{padding:18px;border:1px solid #8b9cbd;border-radius:12px;margin:18px 0}.fund-review .mono,.fund-url{overflow-wrap:anywhere;word-break:break-word}.fund-url{display:block;padding:12px;background:#8881}
+@media(max-width:640px){.fund-fields{grid-template-columns:1fr}.fund-facts{gap:16px}.fund-cards .panel{padding:16px}}

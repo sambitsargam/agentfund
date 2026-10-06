@@ -16,7 +16,9 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "viem": "2.57.3",
-    "server-only": "0.0.1"
+    "server-only": "0.0.1",
+    "@agentfund/cardano-tx": "0.1.0",
+    "@evolution-sdk/evolution": "0.5.16"
   },
   "devDependencies": {
     "@types/react": "19.1.12",

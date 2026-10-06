@@ -5,7 +5,7 @@ import { short, tusdm } from "../../lib/present";
 const STEP: Record<string, string> = {
   open: "Round opened",
   fund: "Investor funded it",
-  revenue: "Agent revenue arrived",
+  revenue: "Operator deposited test funds",
   distribute: "Investor paid first",
 };
 
@@ -25,8 +25,7 @@ export function FundingRound() {
         <div>
           <h3>A funding round that finished itself</h3>
           <p>
-            {tusdm(capital)} tUSDM of capital for {pct}% of Atlas&rsquo;s x402
-            earnings, repaid up to {tusdm(cap)} tUSDM. The contract closed the
+            {tusdm(capital)} tUSDM of capital for a {pct}% share of deposits into this demonstration round, repaid up to {tusdm(cap)} tUSDM. The contract closed the
             deal the moment the cap was reached.
           </p>
         </div>

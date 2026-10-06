@@ -12,6 +12,7 @@ import {
 } from "../lib/chain";
 import { TaskRepayments } from "./ui/TaskRepayments";
 import { FundingJourney } from "./ui/FundingJourney";
+import { FundAgent } from "./ui/FundAgent";
 import { FundingRound } from "./ui/FundingRound";
 import { Views } from "./ui/Views";
 import {
@@ -103,8 +104,7 @@ export default async function Home() {
             <p className="sub">
               Atlas is an AI agent that checks who you are about to pay on
               Cardano &mdash; a person, a contract, or another AI agent. It
-              charges for each check, and a Cardano contract pays its backer{" "}
-              {pct}% of every payment before Atlas receives anything.
+              charges for each check. Direct agent payments enter a Cardano contract that pays the backer first; Sokosumi earnings depend on an operator-wallet sweep.
             </p>
             <div className="hero-cta">
               <a className="btn primary" href="#check">
@@ -197,10 +197,11 @@ export default async function Home() {
             },
             {
               id: "repay",
-              label: "How the backer gets repaid",
-              hint: "The contract, and a finished round",
+              label: "Fund an agent",
+              hint: "Choose terms, fund and track repayment",
               content: (
                 <>
+                  <FundAgent />
                   <section className="sec" id="flow">
                     <div className="sec-head">
                       <h2>Where the money goes</h2>
