@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { prepare, sha256 } from "../src/answer.js";
 import { TaskStore } from "../src/store.js";
-import { CoworkerWorker, QUOTE, confirmed, netReceived, purchasePayload, type MpsPayment, type TaskState } from "../src/worker.js";
+import { CoworkerWorker, QUOTE, checkDeadlines, confirmed, netReceived, purchasePayload, type MpsPayment, type TaskState } from "../src/worker.js";
 
 const reg = { agentIdentifier: "agent", supportedPaymentSourceIndex: 0, sellingWalletId: "w1", payoutAddress: "addr_test1seller" };
 const terms = (over: Partial<MpsPayment> = {}): MpsPayment => ({
@@ -110,5 +110,20 @@ describe("restart safety", () => {
     const worker = new CoworkerWorker({ core: { get: async () => [], post: async () => ({ id: "e" }) } as never, store, blockfrostProjectId: "x", log: () => {} });
     await worker.advance({ id: "01a11029-0000-74cd-945c-fac56d1fe53f", status: "COMPLETED", name: "n", description: "d" });
     expect(store.all()).toHaveLength(0);
+  });
+});
+
+describe("escrow deadlines", () => {
+  it("accepts the defaults", () => {
+    expect(() => checkDeadlines()).not.toThrow();
+  });
+
+  it("rejects an unlock less than 15 minutes after the result deadline, which Masumi refuses", () => {
+    expect(() => checkDeadlines({ payBy: 15, submitResult: 35, unlock: 45, dispute: 65 })).toThrow(/15 minutes/);
+  });
+
+  it("rejects a pay-by after the result deadline and a dispute before unlock", () => {
+    expect(() => checkDeadlines({ payBy: 30, submitResult: 25, unlock: 45, dispute: 65 })).toThrow(/pay-by/);
+    expect(() => checkDeadlines({ payBy: 5, submitResult: 25, unlock: 45, dispute: 40 })).toThrow(/dispute/);
   });
 });

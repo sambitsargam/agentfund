@@ -13,10 +13,21 @@ const MINUTE = 60_000;
  */
 export const DEADLINES = {
   payBy: Number(process.env.MASUMI_PAY_BY_MINUTES ?? 15),
-  submitResult: Number(process.env.MASUMI_RESULT_MINUTES ?? 35),
-  unlock: Number(process.env.MASUMI_UNLOCK_MINUTES ?? 45),
-  dispute: Number(process.env.MASUMI_DISPUTE_MINUTES ?? 65),
+  submitResult: Number(process.env.MASUMI_RESULT_MINUTES ?? 25),
+  unlock: Number(process.env.MASUMI_UNLOCK_MINUTES ?? 40),
+  dispute: Number(process.env.MASUMI_DISPUTE_MINUTES ?? 60),
 };
+
+/** Masumi's own minimum: unlock must be at least 15 minutes after the result deadline. */
+export const MIN_UNLOCK_GAP = 15;
+
+export function checkDeadlines(d: typeof DEADLINES = DEADLINES): void {
+  if (!(d.payBy < d.submitResult)) throw new Error("pay-by must come before the result deadline");
+  if (d.unlock - d.submitResult < MIN_UNLOCK_GAP) {
+    throw new Error(`unlock must be at least ${MIN_UNLOCK_GAP} minutes after the result deadline`);
+  }
+  if (!(d.dispute > d.unlock)) throw new Error("the dispute deadline must come after unlock");
+}
 export const QUOTE = { amount: "1000000", unit: TUSDM_MASUMI_UNIT }; // 1 tUSDM per check
 
 export interface Registration {
@@ -216,6 +227,7 @@ export class CoworkerWorker {
           const a = await answer(prepared.subject, this.deps.blockfrostProjectId);
           return this.save({ ...s, stage: "result-saved", result: a.markdown, resultHash: sha256(a.markdown), delivered: a.delivered });
         }
+        checkDeadlines();
         const nonce = randomBytes(10).toString("hex");
         const now = this.now();
         const request = {

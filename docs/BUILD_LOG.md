@@ -105,3 +105,11 @@ Both use asset name `0014df10745553444d` (CIP-68 fungible label + `tUSDM`). Unit
 - Registration `cmuwcy50o000757ujgfclcp17`, agent identifier `67ab0c92…000000`.
 - **Collection into the splitter: tried, rejected by Masumi.** `PATCH /api/v1/wallet` with `newCollectionAddress` = the splitter was *accepted*, but the next `POST /api/v1/payment` failed with `sellerReturnAddress must be a Cardano base or enterprise address with a payment key credential`. Masumi's escrow datum cannot name a script address as the seller's return address. Reverted to the seeded key wallet, where signed terms succeed. Escrow earnings therefore reach the splitter via a keeper sweep, which is recorded as an open trust gap in `docs/THREAT_MODEL.md`.
 - The worker's step guard behaved as designed when the 400 arrived: the Task was marked `failed` with "interrupted during terms-pending; inspect before retrying" rather than retrying a payment write whose outcome was unknown.
+
+### Paid Sokosumi Task — what the escrow flow actually requires
+Three rejections before the terms were accepted, each worth recording:
+1. `sellerReturnAddress must be a Cardano base or enterprise address with a payment key credential` — Masumi escrow cannot pay out to a script, so the splitter cannot be the collection address (see `docs/THREAT_MODEL.md`).
+2. `signed terms name a different seller wallet` — our own bug: the registration file wrote `sellingWalletId` while the worker read `sellerWalletId`.
+3. `Submit result time must be before unlock time with at least 15 minutes difference` — Masumi's own minimum. Deadlines are now pay-by 15 min, result 25, unlock 40, dispute 60, validated by `checkDeadlines` so the gap cannot regress.
+
+The first paid Task also expired unfunded: Sokosumi Core charged its 100 credits and funds escrow asynchronously, and the reference's 5-minute pay-by window passed before it paid. The worker now fails a payment that is still unfunded past its signed pay-by time instead of polling it forever.
