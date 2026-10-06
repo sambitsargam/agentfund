@@ -12,6 +12,7 @@ import {
   Assets,
   Client,
   TransactionHash,
+  TransactionBody,
   preprod,
 } from "@evolution-sdk/evolution";
 import {
@@ -30,6 +31,8 @@ import {
   type RoundConfig,
 } from "@agentfund/cardano-tx";
 
+import { resolvePending } from "./round-recovery.js";
+
 config({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
 
 const dir = fileURLToPath(
@@ -46,7 +49,7 @@ type Record = {
   scriptHash?: string;
   address?: string;
   /** Set immediately before a submission and cleared after, so a crash cannot be retried blindly. */
-  pending?: { action: string; at: string };
+  pending?: { action: string; at: string; txHash?: string };
   events: Event[];
 };
 
@@ -109,9 +112,12 @@ async function submit(action: string, note: string, built: any) {
     throw new Error(
       `A ${record.pending.action} submission from ${record.pending.at} was never confirmed; run \`status\` and inspect the address before retrying`,
     );
-  record.pending = { action, at: new Date().toISOString() };
+  const expected = TransactionHash.toHex(TransactionBody.toHash((await built.toTransaction()).body));
+  record.pending = { action, at: new Date().toISOString(), txHash: expected };
   save();
   const txHash = TransactionHash.toHex(await (await built.sign()).submit());
+  if (txHash !== expected) throw new Error("Submitted transaction hash differs from the saved proposal");
+  await confirm(txHash);
   record.events.push({ action, txHash, at: new Date().toISOString(), note });
   delete record.pending;
   save();
@@ -242,34 +248,17 @@ if (action === "status") {
   );
   console.log("wrote docs/samples/round-verification.json");
 } else if (action === "resolve") {
-  // An uncertain submission is resolved by the chain, not by trusting our own log: any
-  // transaction at the round address that we never recorded is adopted, and only a clean
-  // address clears the flag.
   if (!record.pending) throw new Error("Nothing is pending");
-  if (!record.address) throw new Error("Round has not been opened yet");
-  const seen = new Set(record.events.map((e) => e.txHash));
-  const onChain: { tx_hash: string }[] = await bf(
-    `/addresses/${record.address}/transactions?order=desc&count=20`,
-  );
-  const unrecorded = onChain.map((t) => t.tx_hash).filter((h) => !seen.has(h));
-  if (unrecorded.length) {
-    for (const txHash of unrecorded)
-      record.events.push({
-        action: record.pending.action,
-        txHash,
-        at: new Date().toISOString(),
-        note: "Adopted after an uncertain submission",
-      });
-    console.log(
-      `adopted ${unrecorded.length} unrecorded transaction(s): ${unrecorded.join(", ")}`,
-    );
-  } else {
-    console.log(
-      `no transaction from the uncertain ${record.pending.action} reached the chain; it is safe to retry`,
-    );
-  }
+  const txHash = await resolvePending(record.pending, async hash => {
+    const tx = await bf(`/txs/${hash}`);
+    return Number(tx.block_height) > 0;
+  });
+  if (!record.events.some(e => e.txHash === txHash)) record.events.push({
+    action: record.pending.action, txHash, at: record.pending.at, note: "Exact saved transaction confirmed after an uncertain submission",
+  });
   delete record.pending;
   save();
+  console.log(`confirmed saved transaction ${txHash}`);
 } else if (action === "open") {
   if (record.events.some((e) => e.action === "open"))
     throw new Error("This round is already open");
@@ -336,9 +325,10 @@ if (action === "status") {
   // A receipt coin must hold the governed asset and nothing else but ADA.
   const hash = await submit(
     "revenue",
-    `${amount(units)} of agent revenue paid into the round`,
+    `${amount(units)} operator deposit into the round (not a customer-payment proof)`,
     await client
       .newTx()
+      .setValidity({ to: BigInt(Date.now() + 600_000) })
       .payToAddress({
         address: Address.fromBech32(record.address!),
         assets: Assets.addByHex(
