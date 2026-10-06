@@ -1,6 +1,6 @@
 import { ATLAS_DEAL, basescan, cardanoscan } from "@agentfund/shared";
 import { COWORKER_ID, REGISTRY, SPLITTER, readCardano, readDecisions, readRating, type Decision, type Payment } from "../lib/chain";
-import { readCoworkerTasks, type CoworkerTask } from "../lib/sokosumi";
+import { readAgentIdentity, readCoworkerTasks, type AgentIdentity, type CoworkerTask } from "../lib/sokosumi";
 import { ago, flagWords, scoreParts, short, tusdm } from "../lib/present";
 import { Actions } from "./ui/Actions";
 import { Flow } from "./ui/Flow";
@@ -21,7 +21,13 @@ const grade = (s: number) => (s >= 800 ? "Strong" : s >= 600 ? "Solid" : s >= 30
 
 export default async function Home() {
   const renderedAt = Date.now();
-  const [rating, decisions, cardano, tasks] = await Promise.all([settle(readRating()), settle(readDecisions()), settle(readCardano()), readCoworkerTasks()]);
+  const [rating, decisions, cardano, tasks, identity] = await Promise.all([
+    settle(readRating()),
+    settle(readDecisions()),
+    settle(readCardano()),
+    readCoworkerTasks(),
+    readAgentIdentity(),
+  ]);
 
   const investor = ATLAS_DEAL.investors[0]!;
   const c = cardano.ok ? cardano.value : null;
@@ -148,11 +154,7 @@ export default async function Home() {
                 <div>
                   <h3>Atlas</h3>
                   <p>Checks any Cardano wallet before you pay it, and explains the verdict in plain words with links to the public record.</p>
-                  <div className="tags">
-                    <span className="tag">Sokosumi · awaiting event approval</span>
-                    <span className="tag">Masumi registry · registers once hosted</span>
-                    {r && <span className="tag ok">Rating verified by Chainlink</span>}
-                  </div>
+                  <Badges identity={identity} rated={Boolean(r)} />
                 </div>
               </div>
 
@@ -222,6 +224,12 @@ export default async function Home() {
                 <dd>1 tUSDM</dd>
                 <dt>Coworker ID</dt>
                 <dd className="mono">{short(COWORKER_ID)}</dd>
+                {identity?.masumi?.agentIdentifier && (
+                  <>
+                    <dt>Masumi agent</dt>
+                    <dd className="mono">{short(identity.masumi.agentIdentifier)}</dd>
+                  </>
+                )}
               </dl>
               <p style={{ fontSize: 12, color: "var(--text-3)", margin: "14px 0 0" }}>
                 Anyone can trigger a split; the contract decides who gets what, so neither side has to trust the other.
@@ -312,6 +320,20 @@ export default async function Home() {
         </footer>
       </main>
     </>
+  );
+}
+
+function Badges({ identity, rated }: { identity: AgentIdentity | null; rated: boolean }) {
+  const registered = identity?.masumi?.state === "RegistrationConfirmed";
+  return (
+    <div className="tags">
+      <span className="tag ok">Live on Sokosumi · TOKEN2049 workspace</span>
+      <span className={`tag ${registered ? "ok" : ""}`}>
+        {registered ? "Registered on Masumi" : identity?.masumi?.state ? `Masumi · ${identity.masumi.state}` : "Masumi registry · pending"}
+      </span>
+      {rated && <span className="tag ok">Rating verified by Chainlink</span>}
+      {identity?.paidTasks && <span className="tag ok">Accepting paid tasks</span>}
+    </div>
   );
 }
 
