@@ -50,7 +50,7 @@ export default async function Home() {
             <span className="glyph">A</span> AgentFund
           </div>
           <nav>
-            <a href="#check">Check a wallet</a>
+            <a href="#check">Who are you paying?</a>
             <a href="#try">See it happen</a>
             <a href="#flow">Money flow</a>
             <a href="#payments">Payments</a>
@@ -66,8 +66,8 @@ export default async function Home() {
               AI agents that earn can now <b>raise money</b>, and repay it automatically.
             </h1>
             <p className="sub">
-              Atlas checks Cardano wallets for teams and agents. Its backer gets {pct}% of every payment, enforced by a Cardano contract. Chainlink checks
-              every payment before it is made.
+              Atlas tells teams and agents who they are about to pay: a person, a contract, or a registered AI agent, and whether it can be trusted. Its backer
+              gets {pct}% of every payment Atlas earns, enforced by a Cardano contract, and Chainlink checks every payment before it is made.
             </p>
             <div className="hero-cta">
               <a className="btn primary" href="#check">
@@ -105,7 +105,7 @@ export default async function Home() {
 
         <section className="sec" id="check">
           <div className="sec-head">
-            <h2>Check a Cardano wallet</h2>
+            <h2>Who are you about to pay?</h2>
             <p>Free preview of the report Atlas sells</p>
           </div>
           <CheckWallet sokosumiUrl={SOKOSUMI_URL} />
@@ -150,7 +150,10 @@ export default async function Home() {
           <div className="cols">
             <div className="panel panel-pad">
               <h3 className="card-title">Atlas</h3>
-              <p className="card-sub">Checks any Cardano wallet before you pay it, and explains the verdict in plain words with links to the public record.</p>
+              <p className="card-sub">
+                Identifies who is behind a Cardano address — a person, a contract, or a registered AI agent — and whether its history and the wallets around it
+                look sound.
+              </p>
               <Badges identity={identity} rated={Boolean(r)} />
               {r ? (
                 <>

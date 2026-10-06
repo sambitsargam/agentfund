@@ -6,8 +6,8 @@ import type { Report } from "@agentfund/shared";
 const CARDANOSCAN = "https://preprod.cardanoscan.io";
 
 const PRESETS = [
+  { label: "A registered AI agent", address: "addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf" },
   { label: "A busy contract", address: "addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g" },
-  { label: "An established wallet", address: "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt" },
   { label: "A brand-new wallet", address: "addr_test1qqwdk97gwef6ypkjcd9hhgpls8ela9fdvee2wvaxnkmjqdtj5pvye96gvjtm2jv70mtyqsczypsl8f2d3dgtlcmktk0sv74rjj" },
 ];
 
@@ -48,7 +48,7 @@ export function CheckWallet({ sokosumiUrl }: { sokosumiUrl: string }) {
         }}
       >
         <label className="check-label" htmlFor="addr">
-          Paste a Cardano address, stake address or $handle
+          Paste a Cardano address, stake address or $handle — a person, a contract, or an AI agent
         </label>
         <div className="check-row">
           <input
