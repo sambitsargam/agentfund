@@ -85,7 +85,34 @@ export function CheckWallet({ sokosumiUrl }: { sokosumiUrl: string }) {
       )}
 
       {result?.ok && <ReportView report={result.report} sokosumiUrl={sokosumiUrl} />}
+      {result?.ok && <WhoPays />}
     </div>
+  );
+}
+
+function WhoPays() {
+  return (
+    <section className="whopays">
+      <h4>Who pays Atlas, and why</h4>
+      <div className="whopays-grid">
+        <div>
+          <b>AI agents, before they send money</b>
+          <span>
+            An agent about to pay a new address asks Atlas first, for 0.50 tUSDM over x402, and gets a machine-readable verdict. Cheap insurance against
+            paying the wrong wallet.
+          </span>
+        </div>
+        <div>
+          <b>Teams on Sokosumi</b>
+          <span>A treasury, grants or OTC team mentions Atlas in chat and gets this report in seconds, instead of fifteen minutes on an explorer.</span>
+        </div>
+        <div>
+          <b>Why not just an explorer?</b>
+          <span>Explorers show raw data. Atlas turns it into one verdict with reasons, checked against a second source, with every source linked.</span>
+        </div>
+      </div>
+      <p>Atlas earns from both, and that income is what lets investors fund it, with repayment enforced by the Cardano contract.</p>
+    </section>
   );
 }
 
