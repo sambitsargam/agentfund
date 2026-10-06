@@ -11,6 +11,7 @@ export const revalidate = 20;
 
 const SOKOSUMI_URL = process.env.SOKOSUMI_LISTING_URL ?? "https://preprod.sokosumi.com";
 const VIDEO_URL = process.env.DEMO_VIDEO_URL;
+const DEMO_SUBJECT = process.env.DEMO_SUBJECT ?? "addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g";
 
 type Settled<T> = { ok: true; value: T } | { ok: false; error: string };
 async function settle<T>(p: Promise<T>): Promise<Settled<T>> {
@@ -122,7 +123,7 @@ export default async function Home() {
             <h2>See it happen</h2>
             <p>Real transactions on test networks</p>
           </div>
-          <Actions enabled={process.env.DEMO_ACTIONS === "on"} videoUrl={VIDEO_URL} />
+          <Actions enabled={process.env.DEMO_ACTIONS === "on"} videoUrl={VIDEO_URL} subject={DEMO_SUBJECT} />
         </section>
 
         <section className="sec" id="flow">

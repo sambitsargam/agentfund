@@ -18,21 +18,21 @@ const CARDANOSCAN = "https://preprod.cardanoscan.io/transaction/";
 const BASESCAN = "https://sepolia.basescan.org/tx/";
 
 const BUTTONS: { action: Action; title: string; blurb: string; tone?: "primary" | "danger" }[] = [
-  { action: "pay", title: "Buy a report", blurb: "A customer agent asks Chainlink, then pays 0.50 tUSDM", tone: "primary" },
+  { action: "pay", title: "Buy a wallet check", blurb: "A customer agent pays Atlas 0.50 tUSDM for the report above", tone: "primary" },
   { action: "tamper", title: "Try a tampered payment", blurb: "Redirect the money away from the backer — Chainlink should block it", tone: "danger" },
   { action: "distribute", title: "Split to the investor", blurb: "Release what the contract is holding" },
   { action: "rate", title: "Refresh the rating", blurb: "Chainlink re-reads earnings and probes Atlas" },
 ];
 
 const TITLES: Record<Action, string[]> = {
-  pay: ["Customer agent asks for a report", "Chainlink checks Atlas", "Paying on Cardano", "Locked in the investor contract", "Report delivered"],
-  tamper: ["Customer agent asks for a report", "Chainlink checks Atlas", "Paying on Cardano", "Locked in the investor contract", "Report delivered"],
+  pay: ["Customer agent asks Atlas to check a wallet", "Chainlink checks Atlas", "Paying on Cardano", "Locked in the investor contract", "Report delivered"],
+  tamper: ["Customer agent asks Atlas to check a wallet", "Chainlink checks Atlas", "Paying on Cardano", "Locked in the investor contract", "Report delivered"],
   distribute: ["Contract holds the payments", "Investor receives 10%", "Atlas receives 90%"],
   rate: ["Reading Atlas's earnings on Cardano", "Probing Atlas's service", "Rating written to Base Sepolia"],
 };
 
 /** Turns the run's log lines into steps a non-engineer can follow. */
-function toSteps(action: Action, lines: string[], done: boolean): Step[] {
+function toSteps(action: Action, lines: string[], done: boolean, subject?: string): Step[] {
   const titles = TITLES[action];
   const steps: Step[] = titles.map((title) => ({ title, state: "pending" }));
   const text = lines.join("\n");
@@ -46,7 +46,7 @@ function toSteps(action: Action, lines: string[], done: boolean): Step[] {
     const seconds = grab(/paid in ([\d.]+) s/);
     const report = grab(/report verdict: (\w+)/);
 
-    if (offer) steps[0] = { ...steps[0]!, state: "done", note: `${offer} tUSDM quoted` };
+    if (offer) steps[0] = { ...steps[0]!, state: "done", note: subject ? `${subject.slice(0, 16)}…${subject.slice(-6)} · ${offer} tUSDM quoted` : `${offer} tUSDM quoted` };
     if (/asking the Chainlink payment gate/.test(text)) steps[1] = { ...steps[1]!, state: "active" };
     if (verdict) {
       const blocked = verdict !== "ALLOW";
@@ -124,7 +124,7 @@ function Outcome({ action, steps }: { action: Action; steps: Step[] }) {
     action === "pay" ? "Payment complete." : action === "distribute" ? "Split complete." : "Rating refreshed.";
   const body =
     action === "pay"
-      ? "Chainlink approved it, the money went into the investor contract, and the report was delivered."
+      ? "Chainlink approved it, the money went into the investor contract, and Atlas delivered the wallet report. You can run the same check free in the box above."
       : action === "distribute"
         ? "The contract released the money and paid the backer their share first."
         : "Chainlink re-read Atlas's earnings, probed its service and recorded the score on Base Sepolia.";
@@ -136,7 +136,7 @@ function Outcome({ action, steps }: { action: Action; steps: Step[] }) {
   );
 }
 
-export function Actions({ enabled, videoUrl }: { enabled: boolean; videoUrl?: string }) {
+export function Actions({ enabled, videoUrl, subject }: { enabled: boolean; videoUrl?: string; subject?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState<Action | null>(null);
   const [action, setAction] = useState<Action | null>(null);
@@ -250,13 +250,13 @@ export function Actions({ enabled, videoUrl }: { enabled: boolean; videoUrl?: st
     [busy, router],
   );
 
-  const steps = action ? toSteps(action, lines, done) : [];
+  const steps = action ? toSteps(action, lines, done, subject) : [];
 
   return (
     <div className="panel actions">
       <p className="actions-intro">
-        Each button runs the real pipeline on test networks: a live Chainlink check, a real Cardano payment, a real split. One run happens at a time, so if
-        someone else is already running one you will see their progress here.
+        These run the real pipeline on test networks. &ldquo;Buy a wallet check&rdquo; has a customer agent pay Atlas 0.50 tUSDM for the same report you can
+        run free above. One run happens at a time, so if someone else is already running one you will see their progress here.
       </p>
 
       {enabled ? (
