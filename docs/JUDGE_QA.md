@@ -131,7 +131,8 @@ trick.
 
 ### What is not finished?
 
-Atlas's day-to-day revenue still flows through the fixed splitter; the funding round is a
-separate completed deal rather than the live path for every payment. The CRE workflows run
+Atlas's Sokosumi earnings still flow through the fixed splitter and an operator sweep; the
+funding round is the live path for the x402 revenue it was opened against, not for every
+payment Atlas takes. The CRE workflows run
 through CLI simulation with real testnet writes rather than a DON deployment. The Masumi sweep
 gap above is unclosed by design, not by omission.

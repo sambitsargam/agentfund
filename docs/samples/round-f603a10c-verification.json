@@ -1,0 +1,70 @@
+{
+  "network": "Cardano preprod",
+  "verifiedAt": "2026-10-06T15:24:54.688Z",
+  "round": "f603a10c1e65e4b86baf1baa2bb247dd4314391ed27cfcbaf919d947",
+  "address": "addr_test1wrmq8ggvrej7fwrt4ud652ajglw5x9permf8el96lyvaj3cjceryd",
+  "terms": {
+    "operator": "addr_test1qrseuc9dfg2qdn7vkg35lxnpzjk4y67nemcmmkc2k5t2yk6ddv3uplh7wk4p468pte5fpxgckpmuu2jcuk5vr2qpgz2q7gyegt",
+    "policy": "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9",
+    "name": "0014df10745553444d",
+    "capital": "200000",
+    "bps": 5000,
+    "cap": "300000"
+  },
+  "investor": "addr_test1qqwdk97gwef6ypkjcd9hhgpls8ela9fdvee2wvaxnkmjqdtj5pvye96gvjtm2jv70mtyqsczypsl8f2d3dgtlcmktk0sv74rjj",
+  "stage": "closed",
+  "capitalPaid": "200000",
+  "totalRepaid": "300000",
+  "capReached": true,
+  "scope": "Net governed-asset flows per transaction, read back from Blockfrost. Lovelace, fees and min-UTxO are excluded.",
+  "steps": [
+    {
+      "txHash": "9b693f3d8c1a224e97621a71a77992874b119ca67297849ab29f49f06e996983",
+      "block": 5261010,
+      "kind": "state",
+      "investorNet": "0",
+      "operatorNet": "0"
+    },
+    {
+      "txHash": "d4889d9a24115877830d34c8a23a05c876480a3a7e2dc6cb62d9f32cac7903ea",
+      "block": 5261012,
+      "kind": "state",
+      "investorNet": "-200000",
+      "operatorNet": "200000"
+    },
+    {
+      "txHash": "6a6b56ae1156fa82c3cf649dcebd0896c053c6a7a404fd2b4742a3f1bcd5c56a",
+      "block": 5261015,
+      "kind": "revenue",
+      "investorNet": "0",
+      "operatorNet": "0",
+      "paidBy": [
+        "addr_test1qpqw23utxnpaslm43vwt6cu8w7zvk85hyr095tww4n24nngjkny4xtt6hpfvcrsaknujy3rzrzqp5gxv8zzvfg7r3x0sx779zx"
+      ]
+    },
+    {
+      "txHash": "6b7328e57a9e38a0d914e113573c258422ca02c0cf5bc4d0986023a87c9f1491",
+      "block": 5261025,
+      "kind": "payout",
+      "investorNet": "250000",
+      "operatorNet": "250000"
+    },
+    {
+      "txHash": "df04f4cc5f7cea4f6b860aade7e020c9c09506486abab498882f19f05feba6c1",
+      "block": 5261027,
+      "kind": "revenue",
+      "investorNet": "0",
+      "operatorNet": "0",
+      "paidBy": [
+        "addr_test1qpqw23utxnpaslm43vwt6cu8w7zvk85hyr095tww4n24nngjkny4xtt6hpfvcrsaknujy3rzrzqp5gxv8zzvfg7r3x0sx779zx"
+      ]
+    },
+    {
+      "txHash": "719c42d49df389758f3b6eb36cd1d1c4029d61e0b1e13958d1fae28c058cce9e",
+      "block": 5261044,
+      "kind": "payout",
+      "investorNet": "50000",
+      "operatorNet": "450000"
+    }
+  ]
+}

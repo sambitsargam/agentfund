@@ -10,7 +10,8 @@
     "funding": "tsx src/funding.ts",
     "loop": "tsx src/loop.ts",
     "test": "vitest run",
-    "round": "tsx src/round.ts"
+    "round": "tsx src/round.ts",
+    "verify-round": "tsx src/verify-round.ts"
   },
   "dependencies": {
     "@agentfund/cardano-tx": "0.1.0",

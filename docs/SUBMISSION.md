@@ -100,36 +100,49 @@ The first on-chain split, for reference:
 [`075142c0…6c08`](https://preprod.cardanoscan.io/transaction/075142c03ca67a90de253149cdc0a32f80a0b658463f2879cdca2661e70c6c08)
 — 1.7% of the per-transaction memory limit for the first input, measured on chain.
 
-### A complete funding round
+### A complete funding round, paid by a real customer
 
 The splitter above enforces a share that is a fixed script parameter. A **funding round**
 (`contracts/cardano/validators/funding_round.ak`) is the whole lifecycle instead: the
 investor's share is inactive until their capital reaches the operator, cumulative payouts are
 tracked in the round's datum, and the round closes itself once the cap is repaid.
 
-Terms: **0.20 tUSDM** of capital for **50%** of Atlas's x402 earnings, repaid up to a
+Terms: **0.20 tUSDM** of capital for **50%** of this agent's x402 earnings, repaid up to a
 **0.30 tUSDM** cap. Round address
-[`addr_test1wr5kyf59uqwrtsgp4gsu4x50mpp4g5n87hvd4dtukx2ee7gxwjlhf`](https://preprod.cardanoscan.io/address/addr_test1wr5kyf59uqwrtsgp4gsu4x50mpp4g5n87hvd4dtukx2ee7gxwjlhf).
+[`addr_test1wrmq8ggvrej7fwrt4ud652ajglw5x9permf8el96lyvaj3cjceryd`](https://preprod.cardanoscan.io/address/addr_test1wrmq8ggvrej7fwrt4ud652ajglw5x9permf8el96lyvaj3cjceryd).
 
-| #   | Step       | Transaction                                                                                                                    | Investor (tUSDM) | Operator (tUSDM) |
-| --- | ---------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------- | ---------------- |
-| 1   | open       | [`2ab175f5…0931`](https://preprod.cardanoscan.io/transaction/2ab175f59d3838671975c52c964c00202370b605f4f7c1ee91359e1e33e60931) | +0.00            | +0.00            |
-| 2   | fund       | [`9bf13ad1…db25`](https://preprod.cardanoscan.io/transaction/9bf13ad188b4103ee194a2a66337b70253e3a0420eacdb67481c8e34fe24db25) | -0.20            | +0.20            |
-| 3   | revenue    | [`77f27c49…567c`](https://preprod.cardanoscan.io/transaction/77f27c49f6fc5735631644dd1b4185931300e24f7821a4da71f3ed2cf4d7567c) | +0.00            | -0.50            |
-| 4   | distribute | [`39754ce0…9cd2`](https://preprod.cardanoscan.io/transaction/39754ce001ef61b3712dce1ff4b138130b67e1ab493378fbd6fe034481099cd2) | +0.25            | +0.25            |
-| 5   | revenue    | [`0cdb2a62…e04c`](https://preprod.cardanoscan.io/transaction/0cdb2a62567fdc00bd051a11103c5a9c2319c07d7edb612a03b7d32a4745e04c) | +0.00            | -0.50            |
-| 6   | distribute | [`f30de9c1…1527`](https://preprod.cardanoscan.io/transaction/f30de9c191f82dbbf68215d775689a3f6b6d3d21ed844453975855a3f6ef1527) | +0.05            | +0.45            |
-| 7   | revenue    | [`132481ac…a88c`](https://preprod.cardanoscan.io/transaction/132481ac822baaff45e3a71de1564e8bce41cc80ae4f44e76f4447ef8c0fa88c) | +0.00            | -0.40            |
-| 8   | distribute | [`841fd045…80a0`](https://preprod.cardanoscan.io/transaction/841fd045b48186b13ffa59536f03c862a9ba4a6ae1af09b406d2794aa5f980a0) | +0.00            | +0.40            |
+| #   | Step                  | Transaction                                                                                                                    | Investor (tUSDM) | Operator (tUSDM) |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------- | ---------------- |
+| 1   | round opened          | [`9b693f3d…6983`](https://preprod.cardanoscan.io/transaction/9b693f3d8c1a224e97621a71a77992874b119ca67297849ab29f49f06e996983) | +0.00            | +0.00            |
+| 2   | investor funds it     | [`d4889d9a…03ea`](https://preprod.cardanoscan.io/transaction/d4889d9a24115877830d34c8a23a05c876480a3a7e2dc6cb62d9f32cac7903ea) | -0.20            | +0.20            |
+| 3   | customer x402 payment | [`6a6b56ae…c56a`](https://preprod.cardanoscan.io/transaction/6a6b56ae1156fa82c3cf649dcebd0896c053c6a7a404fd2b4742a3f1bcd5c56a) | +0.00            | +0.00            |
+| 4   | payout                | [`6b7328e5…1491`](https://preprod.cardanoscan.io/transaction/6b7328e57a9e38a0d914e113573c258422ca02c0cf5bc4d0986023a87c9f1491) | +0.25            | +0.25            |
+| 5   | customer x402 payment | [`df04f4cc…a6c1`](https://preprod.cardanoscan.io/transaction/df04f4cc5f7cea4f6b860aade7e020c9c09506486abab498882f19f05feba6c1) | +0.00            | +0.00            |
+| 6   | payout                | [`719c42d4…ce9e`](https://preprod.cardanoscan.io/transaction/719c42d49df389758f3b6eb36cd1d1c4029d61e0b1e13958d1fae28c058cce9e) | +0.05            | +0.45            |
 
-Reading down the investor column: they pay 0.20 in, receive 0.25, then only **0.05** —
-because that is all that remained under the cap — and then **nothing at all**, because the round
-is closed and later revenue passes straight through to the operator. Total repaid is
-0.30 tUSDM, exactly the cap, which the validator enforces rather than our code.
+Two things make this more than a demonstration of arithmetic.
 
-Every figure is a net flow re-derived from Blockfrost with
-`npm run round -w @agentfund/keeper -- verify`, which refuses to write the file if repayments
-ever exceed the cap. Full record: [docs/samples/round-verification.json](samples/round-verification.json).
+**The revenue is a real customer payment.** Steps 3 and 5 were paid by a buyer agent's own
+wallet (`addr_test1qpqw23u…`) against Atlas's x402 offer for `/rounds/<id>/report`, each
+carrying its receipt as an inline datum. The money went from the customer into the round's
+address directly — it never passed through Atlas's wallet, so there is no step at which the
+operator could have declined to forward it.
+
+**The cap is enforced, not calculated.** Step 4 pays the investor a full 50% share, 0.25. Step
+6 pays only **0.05**, because that is all that remained under the 0.30 cap, and the round
+closes. The validator rejects any transaction that pays more.
+
+Total repaid: 0.30 tUSDM against a 0.30 tUSDM cap, for 0.20 tUSDM of capital. Every figure is a net
+flow re-derived from Blockfrost with `npm run verify-round -w @agentfund/keeper -- <id>`,
+which refuses to write its evidence file if repayments ever exceed the cap. Full record:
+[docs/samples/round-f603a10c-verification.json](samples/round-f603a10c-verification.json).
+
+An earlier round ran the same lifecycle with revenue paid in by the operator rather than a
+customer: [docs/samples/round-verification.json](samples/round-verification.json).
+
+Investors can open and fund a round from the dashboard with a Cardano wallet. The server
+builds an unsigned transaction and stores it, the wallet signs it, and the server submits it;
+no key material reaches the browser or the server.
 
 ## Chainlink CRE track
 
