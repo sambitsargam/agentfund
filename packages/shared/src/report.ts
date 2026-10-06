@@ -4,9 +4,9 @@ import { ChainClient, type SourceRecord } from "./chain.js";
 import { SCORING_RULES, scoreFacts, type Facts, type Score } from "./score.js";
 import { resolveSubject, type Subject } from "./subject.js";
 
-export const REPORT_VERSION = "1";
+export const REPORT_VERSION = "2";
 
-/** Recent transactions inspected for counterparties; keeps one report under ~20 HTTP calls. */
+/** Bound the counterparty sample; the exact query count is included in each report. */
 const COUNTERPARTY_SAMPLE = 8;
 const RECENT_WINDOW = 100;
 
@@ -40,6 +40,15 @@ export interface Report {
     topCounterparties: Counterparty[];
   };
   score: Score;
+  assessment: {
+    nextStep: string;
+    validation: "experimental-unvalidated";
+    identityStatus: "registration-claims-only" | "not-established";
+    limitations: string[];
+    balanceStatus: "matched" | "disagreed" | "unavailable";
+    sampledTransactions: number;
+    counterpartiesChecked: number;
+  };
   crossCheck: {
     field: "balance_lovelace";
     blockfrost: string;
@@ -165,6 +174,24 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
   };
   const score = scoreFacts(facts, nowSeconds);
 
+  const limitations = [
+    "The score describes observed history, not a probability of fraud or a guarantee of payment safety.",
+    "No scam/exchange labels or verification of the recipient’s real-world identity are available.",
+    `Counterparties are sampled from at most ${COUNTERPARTY_SAMPLE} recent transactions, not the full history. Other addresses in a transaction are not necessarily direct trading partners.`,
+    "This is a Cardano preprod report using testnet activity; it is not a mainnet assessment.",
+  ];
+  if (subject.kind === "stake-address") limitations.push("Only the first payment address returned for this stake key was checked; this is not a whole-wallet assessment.");
+  if (agent) limitations.push("Masumi registration metadata records the operator’s claims; it does not certify identity, capability or safety.");
+  if (crossCheckMatches === null) limitations.push("The ADA balance could not be independently checked against Koios.");
+  if (crossCheckMatches === false) limitations.push("The indexers disagree on the ADA balance; refresh before relying on this snapshot.");
+  if (recent.length === RECENT_WINDOW) limitations.push("Recent activity is limited to the last 100 transactions; window counts may be lower bounds.");
+  if (counterpartyRisk.some(c => c.transactions === 0)) limitations.push("Some sampled counterparties have no indexed transaction history; their activity could not be established.");
+  const nextStep = score.verdict === "unknown" || crossCheckMatches !== true
+    ? "Pause and verify the missing or conflicting data. Confirm the exact address with the recipient through a separate channel."
+    : score.verdict === "high"
+      ? "Pause payment and investigate the listed warnings. Confirm the recipient through a separate channel."
+      : "Confirm the exact address and payment purpose with the recipient through a separate channel. Review any warnings before paying.";
+
   const iso = (s: number | null) => (s === null ? null : new Date(s * 1000).toISOString());
   return {
     version: REPORT_VERSION,
@@ -189,6 +216,15 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
       topCounterparties: top,
     },
     score,
+    assessment: {
+      nextStep,
+      validation: "experimental-unvalidated",
+      identityStatus: agent ? "registration-claims-only" : "not-established",
+      limitations,
+      balanceStatus: crossCheckMatches === true ? "matched" : crossCheckMatches === false ? "disagreed" : "unavailable",
+      sampledTransactions: Math.min(recent.length, COUNTERPARTY_SAMPLE),
+      counterpartiesChecked: counterpartyRisk.length,
+    },
     crossCheck: { field: "balance_lovelace", blockfrost: lovelace.toString(), koios: koiosBalance, matches: crossCheckMatches },
     method: [
       subject.kind === "payment-address"
@@ -197,8 +233,8 @@ export async function buildReport(input: string, { chain, now }: BuildReportOpti
       `Read balance, transaction count, first and last ${RECENT_WINDOW} transactions, and stake delegation from Blockfrost (Cardano preprod).`,
       `Counterparties are the other addresses in the ${COUNTERPARTY_SAMPLE} most recent transactions.`,
       "Cross-checked the ADA balance against Koios, an independent indexer.",
-      "Looked for a Masumi registry token at the address, which identifies it as a registered AI agent and reveals what it claims to do.",
-      "Checked each main counterparty's own history, so a clean-looking wallet surrounded by brand-new ones is not reported as safe.",
+      "Looked for a Masumi registry token at the address, which records a registration identity and the operator’s claims, without certifying safety.",
+      "Checked up to three frequent co-occurring addresses for thin history; co-occurrence does not establish a direct payment relationship.",
     ],
     scoringRules: SCORING_RULES,
     sources: chain.sources,

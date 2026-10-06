@@ -48,7 +48,8 @@ export const SCORING_RULES = [
   "Empty balance +5.",
   "Blockfrost and Koios disagree on the balance +10.",
   "Two or more of its main counterparties have almost no history +10.",
-  "A smart contract that is a registered AI agent is treated as a normal wallet, not an unknown contract.",
+  "Masumi registration records identity claims and never removes risk points.",
+  "Missing core transaction history produces an unknown verdict; points are a heuristic, not a probability of fraud.",
   "Risk is capped at 100. 0–20 low, 21–45 medium, above 45 high.",
 ];
 
@@ -70,13 +71,23 @@ export function scoreFacts(f: Facts, nowSeconds: number): Score {
     };
   }
 
+  if (f.firstSeen === null || f.lastSeen === null || f.txCount === 0) {
+    return {
+      risk: 60,
+      verdict: "unknown",
+      headline: "Unknown: core transaction history is incomplete. Recheck the data before paying.",
+      redFlags: [{ code: "incomplete_history", severity: "high", points: 60, message: "The address was found, but its first/last activity or lifetime transaction count could not be established." }],
+      goodSigns: [],
+    };
+  }
+
   const flags: Finding[] = [];
   const good: string[] = [];
   const add = (code: string, severity: Severity, points: number, message: string) =>
     flags.push({ code, severity, points, message });
 
   const ageDays = f.firstSeen === null ? 0 : (nowSeconds - f.firstSeen) / DAY;
-  if (ageDays < 1) add("brand_new", "high", 35, "First used less than a day ago. New addresses are common in scams and typo attacks.");
+  if (ageDays < 1) add("brand_new", "high", 35, "First used less than a day ago. There is little history to assess; newness alone does not establish wrongdoing.");
   else if (ageDays < 7) add("very_new", "high", 25, `First used ${Math.floor(ageDays)} days ago.`);
   else if (ageDays < 30) add("new", "medium", 10, `First used ${Math.floor(ageDays)} days ago.`);
   else if (ageDays >= 90) good.push(`In use for ${Math.floor(ageDays)} days.`);
@@ -95,8 +106,9 @@ export function scoreFacts(f: Facts, nowSeconds: number): Score {
   }
 
   if (f.isRegisteredAgent) {
-    good.push("Registered as an AI agent on Masumi, with its service and author recorded on-chain.");
-  } else if (f.isScript) {
+    good.push("Masumi registration metadata found. The operator’s service and author claims are recorded on-chain; this does not certify safety.");
+  }
+  if (f.isScript) {
     add("smart_contract", "medium", 15, "This is a smart contract, not a person's wallet. Check what the contract does before paying it.");
   } else if (!f.hasStakeKey) {
     add("no_stake_key", "info", 5, "No staking key. Common for exchange and service wallets, unusual for a person.");
@@ -111,7 +123,7 @@ export function scoreFacts(f: Facts, nowSeconds: number): Score {
       "thin_counterparties",
       "medium",
       10,
-      `${f.thinCounterparties} of the addresses it deals with most have almost no history of their own, which is a pattern seen in freshly built payment chains.`,
+      `${f.thinCounterparties} of the addresses it deals with most have almost no history of their own, so their histories provide limited additional evidence.`,
     );
   }
 
@@ -123,7 +135,7 @@ export function scoreFacts(f: Facts, nowSeconds: number): Score {
   const verdict: Verdict = risk <= 20 ? "low" : risk <= 45 ? "medium" : "high";
   const headline =
     verdict === "low"
-      ? "Low risk: an established address with normal activity."
+      ? "Low risk signals in the checked history. Confirm the recipient; this does not establish that it is safe to pay."
       : verdict === "medium"
         ? "Medium risk: verify with the recipient before sending a large amount."
         : "High risk: do not send money until you have confirmed this address another way.";

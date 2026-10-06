@@ -1,0 +1,445 @@
+{
+  "now": 1791255927,
+  "description": "Manually specified synthetic acceptance cases; not a labelled fraud dataset.",
+  "cases": [
+    {
+      "id": "established-wallet",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 0,
+        "flags": []
+      },
+      "reason": "No configured risk conditions are present; recipient authenticity remains unverified."
+    },
+    {
+      "id": "new-wallet",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 1,
+        "firstSeen": 1791252327,
+        "lastSeen": 1791252327,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "high",
+        "risk": 50,
+        "flags": [
+          "brand_new",
+          "little_history"
+        ]
+      },
+      "reason": "Under one day adds 35; fewer than three transactions adds 15."
+    },
+    {
+      "id": "unused-address",
+      "facts": {
+        "found": false,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "never_used"
+        ]
+      },
+      "reason": "An unindexed address cannot be assessed."
+    },
+    {
+      "id": "contract",
+      "facts": {
+        "found": true,
+        "isScript": true,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 15,
+        "flags": [
+          "smart_contract"
+        ]
+      },
+      "reason": "Contract review adds 15 without claiming this contract is malicious."
+    },
+    {
+      "id": "registered-contract",
+      "facts": {
+        "found": true,
+        "isScript": true,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": true,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 15,
+        "flags": [
+          "smart_contract"
+        ]
+      },
+      "reason": "Registration must not remove the contract warning or reduce points."
+    },
+    {
+      "id": "registered-new-wallet",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 1,
+        "firstSeen": 1791252327,
+        "lastSeen": 1791252327,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": true,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "high",
+        "risk": 50,
+        "flags": [
+          "brand_new",
+          "little_history"
+        ]
+      },
+      "reason": "Registration must not make a fresh wallet look safer."
+    },
+    {
+      "id": "no-stake-key",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": false,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 5,
+        "flags": [
+          "no_stake_key"
+        ]
+      },
+      "reason": "Key-address context adds 5 without alleging fraud."
+    },
+    {
+      "id": "registered-no-stake-key",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": false,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": true,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 5,
+        "flags": [
+          "no_stake_key"
+        ]
+      },
+      "reason": "Registration must not bypass key-address context."
+    },
+    {
+      "id": "thin-counterparties",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 2
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 10,
+        "flags": [
+          "thin_counterparties"
+        ]
+      },
+      "reason": "Two thin sampled counterparties add 10; this is a signal, not ground truth."
+    },
+    {
+      "id": "balance-disagreement",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": false,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 10,
+        "flags": [
+          "sources_disagree"
+        ]
+      },
+      "reason": "Source disagreement adds 10; report recommendations separately require refreshing data."
+    },
+    {
+      "id": "missing-cross-check",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": null,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 0,
+        "flags": []
+      },
+      "reason": "An unavailable advisory cross-check is reported as missing, never passed."
+    },
+    {
+      "id": "missing-first-activity",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": null,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "incomplete_history"
+        ]
+      },
+      "reason": "Missing data must not be presented as an observed brand-new wallet."
+    },
+    {
+      "id": "missing-last-activity",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": true,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": null,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "unknown",
+        "risk": 60,
+        "flags": [
+          "incomplete_history"
+        ]
+      },
+      "reason": "Incomplete core history cannot support a low-risk claim."
+    },
+    {
+      "id": "low-boundary",
+      "facts": {
+        "found": true,
+        "isScript": true,
+        "hasStakeKey": true,
+        "balanceLovelace": "0",
+        "tokenKinds": 1,
+        "txCount": 120,
+        "firstSeen": 1756695927,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "low",
+        "risk": 20,
+        "flags": [
+          "smart_contract",
+          "empty"
+        ]
+      },
+      "reason": "15+5=20 is the inclusive low threshold."
+    },
+    {
+      "id": "medium-boundary",
+      "facts": {
+        "found": true,
+        "isScript": false,
+        "hasStakeKey": false,
+        "balanceLovelace": "5000000",
+        "tokenKinds": 1,
+        "txCount": 1,
+        "firstSeen": 1791083127,
+        "lastSeen": 1791083127,
+        "txsLast24h": 0,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": true,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 0
+      },
+      "expected": {
+        "verdict": "medium",
+        "risk": 45,
+        "flags": [
+          "very_new",
+          "little_history",
+          "no_stake_key"
+        ]
+      },
+      "reason": "25+15+5=45 is the inclusive medium threshold."
+    },
+    {
+      "id": "maximum-signals",
+      "facts": {
+        "found": true,
+        "isScript": true,
+        "hasStakeKey": true,
+        "balanceLovelace": "0",
+        "tokenKinds": 1,
+        "txCount": 1,
+        "firstSeen": 1791252327,
+        "lastSeen": 1791252327,
+        "txsLast24h": 20,
+        "txsLast30d": 4,
+        "delegatedPool": "pool1abc",
+        "crossCheckMatches": false,
+        "isRegisteredAgent": false,
+        "thinCounterparties": 2
+      },
+      "expected": {
+        "verdict": "high",
+        "risk": 100,
+        "flags": [
+          "brand_new",
+          "little_history",
+          "burst",
+          "smart_contract",
+          "empty",
+          "thin_counterparties",
+          "sources_disagree"
+        ]
+      },
+      "reason": "35+15+10+15+5+10+10=100; all reasons remain visible."
+    }
+  ]
+}

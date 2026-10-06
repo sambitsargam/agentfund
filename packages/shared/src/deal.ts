@@ -8,6 +8,9 @@ export interface DealTerms {
   investors: { name: string; address: string; bps: number }[];
 }
 
+/** Current registered preprod collection wallet; override after a registration migration. */
+export const ATLAS_MASUMI_PAYOUT_ADDRESS = "addr_test1qpmdzh7surd5r6kvanvcmg6wam6nn9n0ec5mp5v0t0dhtmzdfav2l3umddzyjsdjgc2vnrx3aj3y4t0d2r059njfvg7q5pwayf";
+
 export const ATLAS_DEAL: DealTerms = {
   agentId: "atlas",
   atlasAddress:

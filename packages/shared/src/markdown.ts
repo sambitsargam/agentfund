@@ -3,9 +3,9 @@ import { cardanoscan } from "./explorer.js";
 import type { Report } from "./report.js";
 
 const VERDICT_LABEL: Record<Report["score"]["verdict"], string> = {
-  low: "Low risk",
-  medium: "Medium risk",
-  high: "High risk",
+  low: "Few history warnings",
+  medium: "Some history warnings",
+  high: "Many history warnings",
   unknown: "Unknown",
 };
 
@@ -17,6 +17,7 @@ export function renderReportMarkdown(r: Report): string {
   const s = r.subject;
   const lines: string[] = [];
 
+  lines.push("**Experimental history warning index — fraud-detection accuracy has not been established.**", "");
   lines.push(`**${VERDICT_LABEL[r.score.verdict]} (${r.score.risk}/100)** · ${r.score.headline}`, "");
   const label = s.handle
     ? `${s.handle} → ${short(s.address)}`
@@ -26,13 +27,16 @@ export function renderReportMarkdown(r: Report): string {
   lines.push(`Checked: [${label}](${cardanoscan.address(s.address)}) on Cardano preprod, ${r.generatedAt.replace("T", " ").slice(0, 16)} UTC`, "");
 
   if (r.agent) {
-    lines.push("### Who this is", "");
+    lines.push("### Registration claims", "");
     lines.push(`- **Registered AI agent:** ${r.agent.name}${r.agent.author ? ` by ${r.agent.author}` : ""}`);
     if (r.agent.capability) lines.push(`- **Service:** ${r.agent.capability}`);
     if (r.agent.apiBaseUrl) lines.push(`- **Advertises:** ${r.agent.apiBaseUrl}`);
-    lines.push("- Registered on Masumi, so its identity and what it sells are recorded on Cardano, not just claimed.", "");
+    lines.push("- Registered on Masumi, so the operator’s identity and service claims are recorded on Cardano. Registration does not certify safety.", "");
   }
 
+  if (r.assessment) {
+    lines.push("### Before you pay", "", r.assessment.nextStep, "");
+  }
   lines.push("### Key facts", "");
   if (!f.found) {
     lines.push("- No transactions have ever touched this address.");
@@ -51,7 +55,7 @@ export function renderReportMarkdown(r: Report): string {
   lines.push("");
 
   if (r.counterpartyRisk.length > 0) {
-    lines.push("### Who it deals with", "");
+    lines.push("### Addresses seen in the same transactions", "");
     for (const c of r.counterpartyRisk) {
       const what = c.isScript ? "smart contract" : c.thin ? `only ${c.transactions} transaction${c.transactions === 1 ? "" : "s"} of its own` : `${c.transactions} transactions of its own`;
       lines.push(`- [${short(c.address)}](${cardanoscan.address(c.address)}) — ${what}, seen ${c.seen} time${c.seen === 1 ? "" : "s"} with this wallet`);
@@ -69,16 +73,22 @@ export function renderReportMarkdown(r: Report): string {
   lines.push("");
 
   const cc = r.crossCheck;
-  lines.push("### Accuracy check", "");
+  lines.push("### Independent balance check", "");
   lines.push(
     cc.matches === null
-      ? "- Koios was unreachable, so the balance was not independently confirmed."
+      ? "- Koios did not provide a usable balance, so it was not independently confirmed."
       : cc.matches
         ? `- Balance confirmed by two independent sources (Blockfrost and Koios agree on ${cc.blockfrost} lovelace).`
         : `- Blockfrost (${cc.blockfrost}) and Koios (${cc.koios}) disagree on the balance. Treat the facts above with care.`,
     "",
   );
 
+  lines.push("Balance agreement verifies this field, not the risk verdict or the recipient’s trustworthiness.", "");
+  if (r.assessment) {
+    lines.push("### Limits of this check", "");
+    for (const limit of r.assessment.limitations) lines.push(`- ${limit}`);
+    lines.push("", `Examined ${r.assessment.sampledTransactions} recent transactions and ${r.assessment.counterpartiesChecked} co-occurring addresses.`, "");
+  }
   lines.push("### How this was checked", "");
   for (const m of r.method) lines.push(`- ${m}`);
   lines.push("", `Scoring: ${r.scoringRules.join(" ")}`, "");
@@ -99,7 +109,7 @@ export function renderInputHelpMarkdown(err: InvalidInputError): string {
     "",
     "Examples:",
     "- `addr_test1qr…` (a payment address)",
-    "- `stake_test1u…` (a stake address, to check the whole wallet)",
+    "- `stake_test1u…` (a stake address; checks its first indexed payment address)",
     "- `$myhandle` (an ADA Handle)",
     "",
   ].join("\n");

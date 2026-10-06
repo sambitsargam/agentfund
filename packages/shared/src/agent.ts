@@ -1,10 +1,11 @@
 import type { ChainClient } from "./chain.js";
+import { ATLAS_MASUMI_PAYOUT_ADDRESS } from "./deal.js";
 
 /** Masumi's Web3CardanoV2 registry policy on preprod. An NFT under it is an agent registration. */
 export const MASUMI_REGISTRY_POLICY = "67ab0c92c4ac1610895a1c965ee50aba41a8f1513b15240723b3bd0b";
 
 /** Agents AgentFund has funded, so their Chainlink rating can be shown next to their identity. */
-const FUNDED: Record<string, string> = { "Atlas — Cardano wallet check": "atlas" };
+const FUNDED: Record<string, string> = { [ATLAS_MASUMI_PAYOUT_ADDRESS]: "atlas" };
 
 export interface RegisteredAgent {
   /** The registry NFT's asset unit; the agent's on-chain identifier. */
@@ -61,7 +62,7 @@ export async function detectRegisteredAgent(address: string, chain: ChainClient)
     author: nested(md.author, "name"),
     apiBaseUrl: text(md.api_base_url) ?? text(md.apiBaseUrl),
     capability: nested(md.capability, "name"),
-    fundedAgentId: FUNDED[name] ?? null,
+    fundedAgentId: FUNDED[address] ?? null,
   };
 }
 

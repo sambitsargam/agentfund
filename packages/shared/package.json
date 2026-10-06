@@ -9,6 +9,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "evaluate": "tsx scripts/evaluate.ts",
+    "evaluate:threats": "tsx scripts/evaluate-threats.ts"
   }
 }

@@ -7,3 +7,4 @@ export * from "./score.js";
 export * from "./subject.js";
 export * from "./deal.js";
 export * from "./agent.js";
+export * from "./reputation.js";

@@ -1,0 +1,37 @@
+{
+  "sourceCommit": "a7afe53e1583a8393de5bdae7f329d0f9d64b4ae",
+  "source": "https://github.com/Tastenkunst/eternl-guard",
+  "labelMeaning": "Maintainer-reported threat association, not adjudicated fraud. No unlisted address is labelled safe.",
+  "rows": [
+    {
+      "address": "addr1q90gcv26u7gkcnd85mysl02d5f0wjd6cajve4626zktzg5fan48jlj8h3y55naezt74mt45sf2uezjcm0yty0k4jgg9q8dpuvh",
+      "label": "source-reported-threat",
+      "source": "https://github.com/Tastenkunst/eternl-guard/blob/a7afe53e1583a8393de5bdae7f329d0f9d64b4ae/src/entries/addresses.json"
+    },
+    {
+      "address": "addr1qyl083apd5edtar8c588cawh478qqnshfwa0n6j0x20946lw5jp8v3pwdt6r29zqxl0qzxysxgvcvqu9dwtxnnsrlecssmpy8x",
+      "label": "source-reported-threat",
+      "source": "https://github.com/Tastenkunst/eternl-guard/blob/a7afe53e1583a8393de5bdae7f329d0f9d64b4ae/src/entries/addresses.json"
+    },
+    {
+      "address": "addr1qyu6rh63z3akmengnfrj0prfvtak2sxr50rctxs60xu5yr6krpuk5k3ggkk2s5m93gd6lu3up9r2af8uwz4sx9gah20qqwah5a",
+      "label": "source-reported-threat",
+      "source": "https://github.com/Tastenkunst/eternl-guard/blob/a7afe53e1583a8393de5bdae7f329d0f9d64b4ae/src/entries/addresses.json"
+    },
+    {
+      "address": "addr1qx7hx0lcxll9ff0mz8nvckgtn3tr6vtmh2dqkh8093gcxy9efygslucgzjlr55zscyj6v0y0jp0g7xnxteu0xcregvgq0kev49",
+      "label": "source-reported-threat",
+      "source": "https://github.com/Tastenkunst/eternl-guard/blob/a7afe53e1583a8393de5bdae7f329d0f9d64b4ae/src/entries/addresses.json"
+    },
+    {
+      "address": "addr1q8ulz7ad4tl2uynehway7sury20d56fql9anjm0ue9836dgn6napl6u7lzz05k3avpydqpkzzjsezgv50zr0h4j4m8psnrym9l",
+      "label": "source-reported-threat",
+      "source": "https://github.com/Tastenkunst/eternl-guard/blob/a7afe53e1583a8393de5bdae7f329d0f9d64b4ae/src/entries/addresses.json"
+    },
+    {
+      "address": "addr1q8hwmy3tnnfjfmy98zklkvqxahg3ds32j546sckaa89357wxxdamwywz82da0nnk4zet880hg83fgfje9p2n7hk5340s8udq4e",
+      "label": "source-reported-threat",
+      "source": "https://github.com/Tastenkunst/eternl-guard/blob/a7afe53e1583a8393de5bdae7f329d0f9d64b4ae/src/entries/mercurycoin.json"
+    }
+  ]
+}

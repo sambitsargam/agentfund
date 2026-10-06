@@ -74,10 +74,10 @@ describe("scoring", () => {
     expect(s.risk).toBe(60);
   });
 
-  it("treats a registered AI agent as an identity, not an unknown contract", () => {
+  it("does not remove contract warnings because an agent is registered", () => {
     const s = scoreFacts({ ...base, isScript: true, isRegisteredAgent: true }, NOW);
-    expect(s.redFlags.map((f) => f.code)).not.toContain("smart_contract");
-    expect(s.goodSigns.join(" ")).toMatch(/registered as an ai agent/i);
+    expect(s.redFlags.map((f) => f.code)).toContain("smart_contract");
+    expect(s.goodSigns.join(" ")).toMatch(/registration metadata found/i);
   });
 
   it("flags a wallet surrounded by brand-new counterparties", () => {
@@ -102,7 +102,7 @@ describe("scoring", () => {
 
 function mockChain(routes: Record<string, unknown>): ChainClient {
   const fetch = async (url: string) => {
-    const key = Object.keys(routes).find((k) => url.includes(k));
+    const key = Object.keys(routes).sort((a, b) => b.length - a.length).find((k) => url.includes(k));
     if (!key) return new Response("not found", { status: 404 });
     return new Response(JSON.stringify(routes[key]), { status: 200 });
   };
@@ -146,14 +146,20 @@ describe("buildReport", () => {
     expect(report.sources.some((s) => s.provider === "koios")).toBe(true);
     expect(report.sources.flatMap((s) => s.txHashes ?? [])).toEqual([tx1, tx2]);
     expect(report.method.length).toBe(6);
+    expect(report.assessment.balanceStatus).toBe("matched");
+    expect(report.assessment.nextStep).toMatch(/Confirm the exact address/);
     expect(report.scoringRules.length).toBeGreaterThan(5);
   });
 
   it("renders readable markdown with a verdict first and explorer links", async () => {
     const report = await buildReport(ADDR, { chain: mockChain(routes), now: NOW });
     const md = renderReportMarkdown(report);
-    expect(md.split("\n")[0]).toMatch(/^\*\*Low risk \(\d+\/100\)\*\*/);
+    expect(md.split("\n")[0]).toContain("fraud-detection accuracy has not been established");
+    expect(md).toMatch(/\*\*Few history warnings \(\d+\/100\)\*\*/);
     expect(md).toContain("### Red flags");
+    expect(md).toContain("### Before you pay");
+    expect(md).toContain("### Limits of this check");
+    expect(md).toContain("not the risk verdict");
     expect(md).toContain("### How this was checked");
     expect(md).toContain(`https://preprod.cardanoscan.io/transaction/${tx1}`);
     expect(md).not.toContain("{");
@@ -163,6 +169,34 @@ describe("buildReport", () => {
     const report = await buildReport(ADDR, { chain: mockChain({ "/address_info": [] }), now: NOW });
     expect(report.facts.found).toBe(false);
     expect(report.score.verdict).toBe("unknown");
+  });
+
+  it("recommends pausing when balances disagree even if the score is low", async () => {
+    const report = await buildReport(ADDR, { chain: mockChain({ ...routes, "/address_info": [{ balance: "1" }] }), now: NOW });
+    expect(report.assessment.balanceStatus).toBe("disagreed");
+    expect(report.assessment.nextStep).toMatch(/^Pause/);
+    expect(renderReportMarkdown(report)).toContain("disagree on the balance");
+  });
+
+  it("never calls a missing Koios balance a successful cross-check", async () => {
+    const report = await buildReport(ADDR, { chain: mockChain({ ...routes, "/address_info": [] }), now: NOW });
+    expect(report.assessment.balanceStatus).toBe("unavailable");
+    expect(report.assessment.nextStep).toMatch(/^Pause/);
+    expect(report.assessment.limitations.join(" ")).toContain("could not be independently checked");
+  });
+
+  it("discloses the limited scope of a stake-address lookup", async () => {
+    const report = await buildReport(STAKE, { chain: mockChain({ ...routes, [`/accounts/${STAKE}/addresses`]: [{ address: ADDR }] }), now: NOW });
+    expect(report.subject.address).toBe(ADDR);
+    expect(report.assessment.limitations.join(" ")).toContain("not a whole-wallet assessment");
+  });
+
+  it("discloses capped recent activity and the eight-transaction sample", async () => {
+    const recent = Array.from({ length: 100 }, () => ({ tx_hash: tx1, block_time: NOW - 3600 }));
+    const report = await buildReport(ADDR, { chain: mockChain({ ...routes, [`/addresses/${ADDR}/transactions?order=desc`]: recent }), now: NOW });
+    expect(report.facts.txsLast30dCapped).toBe(true);
+    expect(report.assessment.sampledTransactions).toBe(8);
+    expect(report.assessment.limitations.join(" ")).toContain("lower bounds");
   });
 
   it("explains bad input in plain words", () => {
