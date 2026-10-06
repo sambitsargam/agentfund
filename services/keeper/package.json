@@ -9,7 +9,8 @@
     "sweep": "tsx src/sweep.ts",
     "funding": "tsx src/funding.ts",
     "loop": "tsx src/loop.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "round": "tsx src/round.ts"
   },
   "dependencies": {
     "@agentfund/cardano-tx": "0.1.0",
