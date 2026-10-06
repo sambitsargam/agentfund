@@ -2,7 +2,7 @@
 
 ## The one-sentence version
 
-Atlas earns money two ways; both land in a Cardano contract that pays its investor before it pays Atlas; Chainlink decides whether each agent payment is safe before it happens.
+Atlas earns money two ways; both land in a Cardano contract that pays its investor before it pays Atlas; Chainlink checks the agent payments that run through its gate before they happen, which covers the buyer agent's purchases of `/report` but not a funding round's own endpoint.
 
 ## Components
 

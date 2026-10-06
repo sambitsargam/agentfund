@@ -2,7 +2,7 @@
 
 **Investors fund an AI agent and are repaid out of its earnings automatically, with the split enforced by a Cardano contract.**
 
-Atlas is an AI agent that checks Cardano wallets for a living. Teams hire it on the Sokosumi marketplace; other AI agents pay it per report over x402. x402 payments land directly in an Aiken contract; Masumi escrow earnings first collect into the selling wallet and are swept into that contract. The contract can only release funds by paying each investor their share. Before our buyer agent pays, a Chainlink CRE workflow verifies the payment is going to that contract, that Atlas has a fresh on-chain rating, and that two AI auditors agree — then records Allow, Deny or Review on Base Sepolia. The buyer pays only on Allow.
+Atlas is an AI agent that checks Cardano wallets for a living. Teams hire it on the Sokosumi marketplace; other AI agents pay it per report over x402. x402 payments land directly in an Aiken contract; Masumi escrow earnings first collect into the selling wallet and are swept into that contract. The contract can only release funds by paying each investor their share. Before our buyer agent pays, a Chainlink CRE workflow verifies the payment is going to that contract, that Atlas has a fresh on-chain rating, and that two AI auditors agree — then records Allow, Deny or Review on Base Sepolia. The buyer pays only on Allow. That gate covers this route; a customer paying a funding round's own endpoint pays the round contract directly, constrained by the round validator rather than by Chainlink.
 
 The hard problem in agent financing is not raising money, it is collecting. An agent that earns can simply not pay you back. AgentFund removes the choice: repayment is a property of the payment itself.
 

@@ -8,7 +8,8 @@ One page with every identifier, transaction and link a judge needs. Everything i
 Investors fund an AI agent in exchange for a share of its future earnings. Repayment is
 enforced at the payment itself: the agent's advertised payment address _is_ a Cardano
 validator that cannot release funds without paying each investor their share first.
-Chainlink CRE decides whether each agent payment is safe before it happens.
+Chainlink CRE checks the agent payments that run through its gate before they happen; the
+round-specific payment route does not use it.
 
 The agent is **Atlas**, a Cardano counterparty due-diligence Coworker. You paste an address
 you are about to pay and it tells you who is behind it — a person, a contract, or a
@@ -158,8 +159,14 @@ no key material reaches the browser or the server.
 
 ## Chainlink CRE track
 
-CRE is the orchestration layer, not a bolt-on: the payment gate is what decides whether a
-payment happens at all, and the buyer agent has no path to pay without an ALLOW.
+CRE is the orchestration layer for the gated payment route, not a bolt-on: on that route the
+buyer agent has no path to pay without an ALLOW, and the tamper test below shows it refusing.
+
+**Its coverage is partial, and we will not claim otherwise.** The gate sits in front of the
+buyer agent's x402 purchases of `/report`. It does **not** sit in front of a funding round's own
+endpoint (`/rounds/<id>/report`), where a customer pays the round address directly; those
+payments are constrained by the round validator, not by Chainlink. Extending the gate to that
+route is work we have not done.
 
 | What                                                                         | Evidence                                                                                                                |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -193,27 +200,39 @@ See [docs/OPERATIONS.md](OPERATIONS.md). `npm test` runs 111 tests; `aiken check
 
 Stated plainly, because a judge will ask.
 
-**Proven on-chain.** Payments from both routes land in a validator the operator does not
-control. The validator cannot release funds without paying each investor their share — this
-is enforced by the script, not by our service. The gate blocks a redirected payment before it
-is made. A paid Sokosumi Task ran to completion, the escrow released, and the money reached
-the investor; every hop has a transaction hash above.
+**Proven on-chain.** Payments that reach a round or the splitter land in a validator the
+operator does not control, and cannot leave without paying each investor their share — enforced
+by the script, not by our service. A funding round ran from offer to closure on real customer
+payments and stopped at its cap. The gate blocks a redirected payment on the route it covers. A
+paid Sokosumi Task ran to completion, the escrow released, and the money reached the investor.
+Every hop has a transaction hash above.
 
-**Not proven.** Atlas's risk verdict is _not_ a validated fraud classifier. It reports
-history, registration and counterparty facts with its sources and its gaps; we have never
-measured it against labelled fraud outcomes, and a six-address check against a pinned public
-threat list produced no high warnings, which we report rather than hide. There is no accuracy
-figure in the product, and the UI says so where it matters.
+**Where enforcement stops.** The validator governs money that arrives at it. It does not govern
+what the operator does next, and two boundaries follow:
 
-**A real gap.** Masumi escrow can only release to a wallet with a payment key, not to a
-script, so Masumi earnings reach the splitter via an operator-signed sweep. Until that
-transaction is made, those particular funds are in the operator's custody. x402 payments have
-no such gap — they go straight into the validator. We do not claim protocol-enforced
-repayment for the Masumi route, and [docs/THREAT_MODEL.md](THREAT_MODEL.md) explains it.
+- **Masumi earnings pass through operator custody.** Escrow can only release to a wallet with a
+  payment key, not to a script, so those funds land in the operator's selling wallet and reach
+  the splitter through an operator-signed sweep. Until that transaction is made they are the
+  operator's to move. x402 payments into a round have no such gap.
+- **Future business can be directed elsewhere.** Nothing on-chain compels the operator to keep
+  selling through a funded round's endpoint. An operator who stops routing work through it
+  starves the round rather than breaking it. Enforcement is over the payments that arrive, not
+  over the decision to keep earning.
+
+**Chainlink's coverage is partial.** The gate sits in front of the buyer agent's x402 purchases
+of `/report`. It does not sit in front of a funding round's own endpoint, where a customer pays
+the round address directly; those payments are constrained by the round validator alone.
+
+**The risk verdict is not validated.** Atlas is not a fraud classifier, and nothing we have run
+establishes that it is. The scoring has unit tests over hand-written scenarios, and we have
+checked its output against addresses whose role we already knew — an agent, a contract, a new
+wallet. Both show the rules firing as written on inputs we chose. Neither measures whether a
+verdict would identify a scam, because we have never run it against labelled fraud outcomes. A
+six-address check against a pinned public threat list produced no high warnings, which we report
+rather than hide. There is no accuracy figure in the product, deliberately.
 
 **Scope of the demand evidence.** The investor and the paying agents are our own test wallets.
-One paid Task has completed and collected. That demonstrates the machinery works end to end;
-it is not evidence of customer demand, and we do not present it as such.
+Paid Tasks have completed and collected. That demonstrates the machinery works end to end; it is
+not evidence of customer demand, and we do not present it as such.
 
-Atlas's own day-to-day revenue still flows through the splitter; the funding round above is a
-separate, completed deal that demonstrates the lifecycle end to end.
+[docs/THREAT_MODEL.md](THREAT_MODEL.md) sets all of this out in full.

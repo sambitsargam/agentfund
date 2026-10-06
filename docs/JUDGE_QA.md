@@ -32,7 +32,7 @@ retried.
 
 ### Is Chainlink doing real work, or is it decoration?
 
-The gate is the thing that decides whether a payment happens. The buyer agent pays through a
+On the route it covers, the gate is the thing that decides whether a payment happens. The buyer agent pays through a
 selector that only accepts an offer identical to the one the gate approved — same `payTo`,
 asset, amount and script hash — so with no ALLOW there is no payment. The tamper demo is the
 proof: redirect the payment to a wallet and the gate returns DENY with `payToMismatch` before
@@ -41,6 +41,14 @@ any transaction exists.
 Mechanically it is an orchestration layer across three systems: EVM read of the rating, HTTP
 to Blockfrost for Cardano state, two LLM auditors inside a TEE, then an EVM write of the
 verdict. Remove it and the payment path loses its only pre-flight check.
+
+### Does the gate cover every payment?
+
+No. It covers the buyer agent's x402 purchases of `/report`, which is the route the tamper demo
+uses. It does **not** cover a funding round's own endpoint, where a customer pays the round
+address directly — those payments are constrained by the round validator alone. Saying Chainlink
+checks _every_ agent payment would be wrong, and extending the gate to that route is work we
+have not done.
 
 ### You write the rating yourself. Isn't that self-dealing?
 
@@ -69,9 +77,13 @@ main counterparties have any history of their own — each with its source and i
 core history is missing it returns Unknown rather than a low-risk label, and it pauses the
 recommendation when two data sources disagree on the balance.
 
-We have never measured it against labelled fraud outcomes. A diagnostic over six addresses
-against a pinned public threat list produced zero high warnings; we publish that because it
-weakens the claim. There is no accuracy number anywhere in the product, deliberately.
+We have never measured it against labelled fraud outcomes. What we do have is unit tests over
+hand-written scenarios and checks against addresses whose role we already knew — an agent, a
+contract, a new wallet. Those show the rules firing as written on inputs we chose; they say
+nothing about whether a verdict would catch a scam, and we will not present them as if they did.
+A diagnostic over six addresses against a pinned public threat list produced zero high warnings;
+we publish that because it weakens the claim. There is no accuracy number anywhere in the
+product, deliberately.
 
 ### Then what is Atlas actually useful for?
 
