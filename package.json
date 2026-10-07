@@ -1,6 +1,7 @@
 {
   "name": "agentfund",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "workspaces": [
     "packages/*",
