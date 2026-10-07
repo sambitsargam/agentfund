@@ -1,4 +1,5 @@
 import "server-only";
+import { readLogRanges, readWithFallback } from "./rpc-logs";
 import { allPages, summarizeCardano, type BfIo, type CardanoActivity, type CardanoTransaction } from "./cardano-activity";
 export type { Payment, Split, CardanoActivity } from "./cardano-activity";
 import { createPublicClient, http, keccak256, parseAbi, parseAbiItem, stringToBytes, type Hex } from "viem";
@@ -13,24 +14,25 @@ export const SPLITTER = "addr_test1wzyukctzs3agkmx9gt85dp2ftu9622k8926qh7kjhlw3z
 export const ATLAS_ID = keccak256(stringToBytes(ATLAS_DEAL.agentId));
 export const COWORKER_ID = "01a10f48-cd2e-7408-b1f2-493af98854af";
 
-// sepolia.base.org caps eth_getLogs at 500 blocks; publicnode serves the full range.
-const base = createPublicClient({ chain: baseSepolia, transport: http(process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia-rpc.publicnode.com") });
-const fallback = createPublicClient({ chain: baseSepolia, transport: http(process.env.BASE_SEPOLIA_RPC_FALLBACK ?? "https://base-sepolia.drpc.org") });
-const CHUNK = 9_999n;
+// Bound history reads even when the registry grows beyond a provider's full-range limit.
+const rpcUrls = [...new Set([
+  process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia-rpc.publicnode.com",
+  process.env.BASE_SEPOLIA_RPC_FALLBACK ?? "https://sepolia.base.org",
+  "https://base-sepolia-rpc.publicnode.com",
+  "https://sepolia.base.org",
+])];
+const providers = rpcUrls.map(url => ({
+  client: createPublicClient({ chain: baseSepolia, transport: http(url, { timeout: 8000, retryCount: 0 }) }),
+  chunk: new URL(url).hostname === "sepolia.base.org" ? 500n : 10000n,
+}));
+const base = providers[0]!.client;
 
-/** Full-range log query, falling back to chunked queries on a provider with a range cap. */
-async function logs<T>(query: (client: typeof base, fromBlock: bigint, toBlock?: bigint) => Promise<T[]>): Promise<T[]> {
-  try {
-    return await query(base, REGISTRY_FROM_BLOCK);
-  } catch {
-    const head = await fallback.getBlockNumber();
-    const out: T[] = [];
-    for (let from = REGISTRY_FROM_BLOCK; from <= head; from += CHUNK + 1n) {
-      const to = from + CHUNK > head ? head : from + CHUNK;
-      out.push(...(await query(fallback, from, to)));
-    }
-    return out;
-  }
+async function logs<T>(query: (client: typeof base, fromBlock: bigint, toBlock: bigint) => Promise<T[]>): Promise<T[]> {
+  return readWithFallback(providers.map(({ client, chunk }) => async () => {
+    const head = await client.getBlockNumber();
+    if (head < REGISTRY_FROM_BLOCK) throw new Error("RPC provider is behind registry deployment");
+    return readLogRanges(REGISTRY_FROM_BLOCK, head, (from, to) => query(client, from, to), chunk);
+  }));
 }
 
 const registryAbi = parseAbi([
@@ -67,8 +69,8 @@ export interface Decision {
 
 export async function readRating(): Promise<Rating | null> {
   const [r, ratingLogs] = await Promise.all([
-    base.readContract({ address: REGISTRY, abi: registryAbi, functionName: "getRating", args: [ATLAS_ID] }),
-    logs((c, fromBlock, toBlock) => c.getLogs({ address: REGISTRY, event: ratingEvent, args: { agentId: ATLAS_ID }, fromBlock, toBlock })),
+    readWithFallback(providers.map(({ client }) => () => client.readContract({ address: REGISTRY, abi: registryAbi, functionName: "getRating", args: [ATLAS_ID] }))),
+    logs((c, fromBlock, toBlock) => c.getLogs({ address: REGISTRY, event: ratingEvent, args: { agentId: ATLAS_ID }, fromBlock, toBlock })).catch(() => []),
   ]);
   if (r.observedAt === 0n) return null;
   return {
