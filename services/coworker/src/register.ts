@@ -76,6 +76,38 @@ async function sellingWallet(): Promise<Wallet & { id: string }> {
   return { ...w, id };
 }
 
+const isStandard = () => (process.env.MASUMI_ACCESS_MODEL ?? "Standard") === "Standard";
+
+/**
+ * The profile the registry publishes, and the field that carries the agent's address.
+ * A Standard registration is reached at `apiBaseUrl`; only an X402 one uses
+ * `x402ResourcesUrl`. Sending the wrong one leaves the registry pointing nowhere,
+ * which is how this agent ended up advertising localhost after it was hosted.
+ */
+function metadata(resourcesUrl: string) {
+  const standard = isStandard();
+  return {
+    network: "Preprod",
+    type: standard ? "Standard" : "X402",
+    ...(standard
+      ? { apiBaseUrl: resourcesUrl.replace(/\/\.well-known\/x402\.json$/, "") }
+      : { x402ResourcesUrl: resourcesUrl }),
+    name: "Atlas \u2014 Cardano wallet check",
+    description:
+      "Check any Cardano wallet before you pay it. Atlas reads the wallet's public history and returns a plain-language risk verdict with the facts, the method and links to the public record. Built for treasury, payments, grants and OTC teams.",
+    Tags: ["due-diligence", "cardano", "risk", "payments", "treasury"],
+    Capability: { name: "atlas-wallet-check", version: "1" },
+    Author: { name: "AgentFund" },
+    ExampleOutputs: [
+      {
+        name: "Wallet check: medium risk",
+        url: "https://github.com/sambitsargam/agentfund/blob/main/docs/samples/task-result-event-workspace.md",
+        mimeType: "text/markdown",
+      },
+    ],
+  };
+}
+
 async function register(resourcesUrl: string) {
   const prior = read();
   if (prior?.registrationId) {
@@ -90,12 +122,9 @@ async function register(resourcesUrl: string) {
   // Sokosumi Task purchases go through the Standard access model, which is what Masumi's own
   // reference implementation registers; x402 payments do not need the registry at all, because
   // the facilitator verifies the script address from the 402 itself.
-  const standard = (process.env.MASUMI_ACCESS_MODEL ?? "Standard") === "Standard";
   const body = {
-    network: "Preprod",
-    type: standard ? "Standard" : "X402",
+    ...metadata(resourcesUrl),
     sellingWalletVkey: wallet.walletVkey,
-    ...(standard ? { apiBaseUrl: resourcesUrl.replace(/\/\.well-known\/x402\.json$/, "") } : { x402ResourcesUrl: resourcesUrl }),
     supportedPaymentSources: [
       {
         chain: "Cardano",
@@ -103,19 +132,6 @@ async function register(resourcesUrl: string) {
         paymentSourceType: "Web3CardanoV2",
         address: source.smartContractAddress,
         pricing: { pricingType: "Dynamic" },
-      },
-    ],
-    name: "Atlas — Cardano wallet check",
-    description:
-      "Check any Cardano wallet before you pay it. Atlas reads the wallet's public history and returns a plain-language risk verdict with the facts, the method and links to the public record. Built for treasury, payments, grants and OTC teams.",
-    Tags: ["due-diligence", "cardano", "risk", "payments", "treasury"],
-    Capability: { name: "atlas-wallet-check", version: "1" },
-    Author: { name: "AgentFund" },
-    ExampleOutputs: [
-      {
-        name: "Wallet check: medium risk",
-        url: "https://github.com/sambitsargam/agentfund/blob/main/docs/samples/task-result-event-workspace.md",
-        mimeType: "text/markdown",
       },
     ],
   };
@@ -155,8 +171,11 @@ else if (command === "url") {
   if (!value?.startsWith("https://")) throw new Error("usage: register url https://…/.well-known/x402.json");
   const s = read();
   if (!s?.agentIdentifier) throw new Error("register and wait for confirmation first");
-  await api("/registry/update", { network: "Preprod", agentIdentifier: s.agentIdentifier, x402ResourcesUrl: value });
+  // The update burns the current asset and mints a replacement, so the identifier
+  // changes; `check` writes the new one back.
+  await api("/registry/update", { ...metadata(value), agentIdentifier: s.agentIdentifier });
   save({ ...s, x402ResourcesUrl: value });
+  console.log("the agent identifier changes on update; run \"check\" to record the new one");
   console.log(`registration now points at ${value}`);
 } else {
   await register(process.env.ATLAS_PUBLIC_URL ? `${process.env.ATLAS_PUBLIC_URL.replace(/\/$/, "")}/.well-known/x402.json` : "http://localhost:4021/.well-known/x402.json");
