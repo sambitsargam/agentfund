@@ -90,3 +90,11 @@ The customer-funded test is recorded in `docs/samples/round-f603a10c-verificatio
 0.20 tUSDM capital, two 0.50 tUSDM x402 purchases from our test buyer, and investor payouts
 of 0.25 then 0.05 tUSDM, closing at the 0.30 cap. This is internal testnet evidence, not an
 external paying-customer study. No new payment is needed to reverify it.
+
+## Funding request protections
+
+The persistent backend limits all callers together to six transaction preparations, 30 confirmation checks, 120 reads and 120 other actions per minute. Limits survive process restarts and return HTTP 429 with a retry delay; public round reads share a ten-second cache and an in-flight read. This bounds provider usage; it is not per-user authentication or general DDoS protection.
+
+A filesystem lock serializes builders across processes sharing the funding volume. Each stored proposal reserves its wallet and round until its chain validity has expired (the nine-minute signing deadline plus a two-minute margin), or until its exact transaction hash is confirmed. Closing a browser or discarding an unsigned proposal does not prematurely release that reservation. External wallet transactions can still spend those inputs. After an unexpected host crash, a remaining `.proposal-lock` or `.quota-lock` requires operator inspection before removal; do not clear one while a builder is active.
+
+Before assembly, every supplied Ed25519 witness must verify over the proposal's transaction hash, and at least one must match the expected payment key. Wrong-wallet, malformed and wrong-transaction signatures are rejected before submission. The server still has no signing keys.

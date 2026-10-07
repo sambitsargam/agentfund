@@ -214,11 +214,16 @@ export class CoworkerWorker {
     return Boolean(this.deps.mps && this.deps.registration);
   }
 
-  async poll(): Promise<void> {
+  async poll(observeOnly = false): Promise<void> {
     const tasks = await this.deps.core.get<CoreTask[]>("/v1/tasks?limit=50");
     this.lastPollAt = new Date(this.now()).toISOString();
     for (const task of tasks) {
       try {
+        if (observeOnly) {
+          const s = this.deps.store.read(task.id);
+          if (s && (s.marketplaceStatus !== task.status || (s.stage === "failed" && s.error?.startsWith("local state is missing for a paid RUNNING Task")))) this.save({ ...s, marketplaceStatus: task.status, ...(s.error?.startsWith("local state is missing for a paid RUNNING Task") ? { stage: "needs-recovery" as const } : {}) });
+          continue;
+        }
         await this.advance(task);
       } catch (err) {
         this.deps.log(`task ${task.id}: ${(err as Error).message}`);

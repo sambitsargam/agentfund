@@ -121,7 +121,7 @@ console.log(
 );
 for (;;) {
   try {
-    await worker.poll();
+    await worker.poll(process.env.COWORKER_OBSERVE_ONLY === "true");
   } catch (err) {
     console.error(
       new Date().toISOString(),

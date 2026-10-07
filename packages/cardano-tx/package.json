@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./funding-service": "./src/funding-service.ts",
     "./funding-types": "./src/funding-types.ts",
-    "./funding-http": "./src/funding-http.ts"
+    "./funding-http": "./src/funding-http.ts",
+    "./funding-guards": "./src/funding-guards.ts"
   },
   "scripts": {
     "test": "vitest run",

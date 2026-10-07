@@ -11,6 +11,6 @@ export async function remoteFunding(method: "GET" | "POST", body?: unknown, env:
     const r = await fetcher(url, { method, headers: { Authorization: `Bearer ${env.FUNDING_API_TOKEN}`, "Content-Type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), redirect: "error", cache: "no-store", signal: AbortSignal.timeout(55_000) });
     if (!r.headers.get("content-type")?.includes("application/json")) throw new Error("Unexpected service response");
     const data = await r.json();
-    return Response.json(data, { status: r.status, headers: { "Cache-Control": "no-store" } });
+    return Response.json(data, { status: r.status, headers: { "Cache-Control": "no-store", ...(r.headers.has("retry-after") ? { "Retry-After": r.headers.get("retry-after")! } : {}) } });
   } catch { return Response.json({ error: "Funding service is unreachable. Keep any saved signed transaction and retry confirmation later." }, { status: 503 }); }
 }

@@ -1,3 +1,4 @@
+import { fundingQuota, withProposalLock, checkProposalReservation, verifyFundingWitnesses } from "./funding-guards.js";
 import { randomUUID } from "node:crypto";
 import { Address, Assets, Client, Transaction, TransactionBody, TransactionHash, preprod } from "@evolution-sdk/evolution";
 import { ATLAS_DEAL, BLOCKFROST_PREPROD_URL, TUSDM_X402_POLICY, TUSDM_ASSET_NAME } from "@agentfund/shared";
@@ -24,8 +25,9 @@ export async function fundingViews(): Promise<FundingView[]> {
     } catch { return { ...base, stage: "unavailable" as const, error: "Cannot read the chain. Funding is paused until it can be verified." }; }
   }));
 }
-export async function prepareFunding(input: { action: FundingAction; address: string; roundId?: string; capital?: string; bps?: number; cap?: string }): Promise<FundingTicket> {
+async function prepareFundingUnlocked(input: { action: FundingAction; address: string; roundId?: string; capital?: string; bps?: number; cap?: string }): Promise<FundingTicket> {
   const address = walletAddress(input.address), client = provider(address), db = store();
+  checkProposalReservation(db.dir, address, input.roundId);
   let c: RoundConfig;
   let built;
   if (input.action === "open") {
@@ -40,7 +42,6 @@ export async function prepareFunding(input: { action: FundingAction; address: st
     c = { id: "draft", agent: "atlas", service: "recipient-check", terms, seed: { txHash: TransactionHash.toHex(seedCoin.transactionId), index: Number(seedCoin.index) } };
     c.id = buildRound(c).hash;
     built = await prepareRoundOpen(client, c);
-    db.write("rounds", c.id, c);
   } else {
     c = db.round(input.roundId ?? "");
     if (input.action === "fund") built = await prepareRoundFund(client, c, address);
@@ -53,13 +54,17 @@ export async function prepareFunding(input: { action: FundingAction; address: st
   const tx = await built.toTransaction();
   const ticket: FundingTicket = { id: randomUUID(), roundId: c.id, action: input.action, address, terms: c.terms, cbor: Transaction.toCBORHex(tx), txHash: TransactionHash.toHex(TransactionBody.toHash(tx.body)), expiresAt: Date.now() + 540_000, fee: String(await built.estimateFee()) };
   db.write("tickets", ticket.id, ticket);
+  if (input.action === "open") db.write("rounds", c.id, c);
   return ticket;
+}
+export async function prepareFunding(input: Parameters<typeof prepareFundingUnlocked>[0]): Promise<FundingTicket> {
+  return withProposalLock(store().dir, () => prepareFundingUnlocked(input));
 }
 export function assembleFunding(id: string, witnesses: string) {
   const ticket = store().read<FundingTicket>("tickets", id);
   if (!ticket) throw new Error("Transaction proposal not found");
   if (Date.now() > ticket.expiresAt) throw new Error("The unsigned proposal expired. Build a fresh proposal before signing.");
-  if (!/^(?:[0-9a-fA-F]{2}){1,32000}$/.test(witnesses)) throw new Error("Invalid wallet signature");
+  verifyFundingWitnesses(ticket, witnesses);
   return { signedCbor: Transaction.addVKeyWitnessesHex(ticket.cbor, witnesses), txHash: ticket.txHash };
 }
 export async function fundingConfirmation(id: string) {
@@ -68,11 +73,15 @@ export async function fundingConfirmation(id: string) {
   const r = await fetch(`${BLOCKFROST_PREPROD_URL}/txs/${ticket.txHash}`, { headers: { project_id: process.env.BLOCKFROST_PROJECT_ID! }, signal: AbortSignal.timeout(15_000), cache: "no-store" });
   if (r.status === 404) return { confirmed: false, txHash: ticket.txHash, message: "Not confirmed yet. Keep this transaction; do not create a replacement payment." };
   if (!r.ok) throw new Error("Confirmation provider unavailable; transaction status remains unknown");
-  return { confirmed: Number((await r.json()).block_height) > 0, txHash: ticket.txHash };
+  const confirmed = Number((await r.json()).block_height) > 0;
+  if (confirmed) store().write("tickets", ticket.id, { ...ticket, confirmedAt: Date.now() });
+  return { confirmed, txHash: ticket.txHash };
 }
 
 /** Shared handler for a persistent Atlas host and the local dashboard. No signing keys used. */
 export async function fundingAction(body: Record<string, any>) {
+  const group = ["open", "fund", "distribute", "cancel"].includes(body.action) ? "build" : body.action === "confirm" ? "confirm" : "other";
+  fundingQuota(store().dir, group);
   if (body.action === "connect") return { address: walletAddress(body.address) };
   if (body.action === "assemble") return assembleFunding(body.id, body.witnesses);
   if (body.action === "confirm") return fundingConfirmation(body.id);

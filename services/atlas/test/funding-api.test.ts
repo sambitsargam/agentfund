@@ -1,3 +1,6 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -17,4 +20,15 @@ describe("persistent funding service", () => {
     const r = await request(app).post("/funding").set("Authorization", "Bearer test-token").send({ action: "erase" });
     expect(r.status).toBe(400); expect(r.body.error).toBe("Unknown funding action");
   });
+});
+
+it("returns retryable 429 responses before excess builds reach the provider", async () => {
+  const old = process.env.FUNDING_DATA_DIR;
+  process.env.FUNDING_DATA_DIR = mkdtempSync(join(tmpdir(), "funding-http-quota-"));
+  try {
+    for (let i = 0; i < 6; i++) expect((await request(app).post("/funding").set("Authorization", "Bearer test-token").send({ action: "open", address: "invalid" })).status).toBe(400);
+    const r = await request(app).post("/funding").set("Authorization", "Bearer test-token").send({ action: "open", address: "invalid" });
+    expect(r.status).toBe(429); expect(Number(r.headers["retry-after"])).toBeGreaterThan(0); expect(r.body.error).toContain("limit reached");
+    expect((await request(app).post("/funding").set("Authorization", "Bearer test-token").send({ action: "connect", address: ATLAS_DEAL.atlasAddress })).status).toBe(200);
+  } finally { if (old === undefined) delete process.env.FUNDING_DATA_DIR; else process.env.FUNDING_DATA_DIR = old; }
 });

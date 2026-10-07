@@ -165,3 +165,15 @@ describe("escrow deadlines", () => {
     expect(() => checkDeadlines({ payBy: 5, submitResult: 25, unlock: 45, dispute: 40 })).toThrow(/dispute/);
   });
 });
+
+it("an observer never claims a ready Task or advances a paid Task", async () => {
+  const store = new TaskStore<TaskState>(mkdtempSync(join(tmpdir(), "observer-")));
+  const id = "01a1135f-d2a4-727a-89aa-e049abdccab1";
+  store.write(id, { taskId: id, input: "check", stage: "terms", paid: true, startedAt: new Date().toISOString() });
+  const writes: unknown[] = [];
+  const worker = new CoworkerWorker({ core: { get: async () => [{ id, status: "RUNNING", name: "check" }, { id: "01a1135f-85b4-7158-b2db-2271c8f49bee", status: "READY", name: "new" }], post: async (...args: unknown[]) => { writes.push(args); } } as never, mps: { post: async (...args: unknown[]) => { writes.push(args); } } as never, registration: reg, store, blockfrostProjectId: "test", log: () => {} });
+  await worker.poll(true);
+  expect(writes).toEqual([]);
+  expect(store.read(id)?.stage).toBe("terms");
+  expect(store.all()).toHaveLength(1);
+});

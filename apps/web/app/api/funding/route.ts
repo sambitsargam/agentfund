@@ -25,7 +25,10 @@ export async function POST(req: Request) {
     if (building) return Response.json({ error: "Another transaction is being prepared. Try again shortly." }, { status: 429 });
     building = true;
     try { return Response.json(await fundingAction(body)); }
-    catch (err) { return Response.json({ error: publicFundingError(err) }, { status: 400 }); }
+    catch (err) {
+      const { FundingLimited } = await import("@agentfund/cardano-tx/funding-guards");
+      return Response.json({ error: err instanceof FundingLimited ? err.message : publicFundingError(err) }, { status: err instanceof FundingLimited ? 429 : 400 });
+    }
     finally { building = false; }
   } catch { return Response.json({ error: "Funding service unavailable or request invalid. No replacement transaction was submitted." }, { status: 503 }); }
 }

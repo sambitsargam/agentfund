@@ -29,7 +29,7 @@ The shape that fits is Railway for anything long-running plus Vercel for the das
 
 **Funding persistence** — use the existing Coworker volume at `/data` and set `FUNDING_DATA_DIR=/data/funding`. Configure a server-only shared `FUNDING_API_TOKEN` on Coworker, Atlas and Vercel, and set Vercel and Atlas `FUNDING_API_URL` to the Coworker host’s HTTPS `/funding` endpoint. The dashboard proxies funding requests; Coworker owns the durable store. See [FUNDING_FEATURE.md](FUNDING_FEATURE.md).
 
-**Vercel** — the dashboard. It needs `BLOCKFROST_PROJECT_ID`, `COWORKER_URL` and `BASE_SEPOLIA_RPC`. Leave `DEMO_ACTIONS` unset on Vercel. Live actions launch local commands and the CRE CLI and require a persistent host with the repository, dependencies and testnet credentials; the guards in `apps/web/lib/jobs.ts` do not make that runtime available on Vercel.
+**Vercel** — the dashboard. It needs `BLOCKFROST_PROJECT_ID`, `COWORKER_URL` and `BASE_SEPOLIA_RPC`. Set `DEMO_ACTIONS=on`, `DEMO_API_URL=https://coworker-production-e28c.up.railway.app/demo` and server-only `DEMO_API_TOKEN`. Vercel forwards fixed demo actions to a durable queue. The existing Mac runner polls that queue and executes CRE/testnet commands; Vercel never holds the signing keys or spawns these commands. Buttons report unavailable when the runner heartbeat stops. Keep the Mac awake for live demos.
 
 After deploying Atlas, update the Standard registration's `apiBaseUrl` to its public HTTPS base URL using MPS. The current CLI `url` subcommand sends `x402ResourcesUrl` and is intended for X402 registrations; do not use it to update this Standard registration. Keep the manifest at `/.well-known/x402.json` for x402 discovery.
 
@@ -149,3 +149,11 @@ lsof -ti:4030 | xargs kill              # stop a local worker
 
 A worker that is stopped mid-Task does not lose it: payment state is on disk, and the next
 worker to start adopts anything still in flight rather than paying again.
+
+## Live demo runner and worker ownership (7 October)
+
+Start from the application root with `node --import tsx scripts/demo-runner.ts`; include Bun and CRE on PATH. The ignored `.env.demo-runner` contains the queue URL/token and `DEMO_AUTOMATIC_KEEPER=true`; normal testnet credentials remain in `.env`. Run only one demo runner. Public requests are fixed actions, serialized with a one-minute cooldown and a durable 40-paid-run limit. Claimed jobs never automatically requeue after an uncertain response or restart. An unsuccessful paid run blocks new runs pending inspection. Do not delete queue/claim records to retry a payment.
+
+The Railway Coworker currently uses `COWORKER_OBSERVE_ONLY=true`. The local worker owns execution and its existing payment state. The demo runner mirrors only public Task progress to the hosted display; it never transfers execution ownership or submits Task events. Stale mirror records are labelled as last-known progress. To move execution to Railway, first stop the local worker and reconcile its full persisted Task/payment state and payment-service configuration; do not simply start both workers.
+
+The two Tasks ending `dccab1` and `f49bee` were RUNNING, not marketplace failures. The hosted worker had no local state for them. They subsequently settled in collection transaction `10ca67312f7c72f52ea9916450643a2563312be7b1512d988edab73539e71e6d`. The local worker now reports five verified collections, three older failures, and no ongoing Tasks. Historical failures remain visible.

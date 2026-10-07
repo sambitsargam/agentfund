@@ -8,8 +8,8 @@ describe("hosted round catalog", () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "a".repeat(56) })));
     const store = remoteRoundStore({ FUNDING_API_URL: "https://example.com/funding", FUNDING_API_TOKEN: "secret" }, fetcher);
     expect((await store.round("a".repeat(56))).id).toBe("a".repeat(56));
-    expect(String(fetcher.mock.calls[0][0])).toBe(`https://example.com/funding/rounds/${"a".repeat(56)}`);
-    expect(fetcher.mock.calls[0][1]).toMatchObject({ headers: { Authorization: "Bearer secret" }, redirect: "error" });
+    expect(String(fetcher.mock.calls[0]![0])).toBe(`https://example.com/funding/rounds/${"a".repeat(56)}`);
+    expect(fetcher.mock.calls[0]![1]).toMatchObject({ headers: { Authorization: "Bearer secret" }, redirect: "error" });
   });
   it("rejects unavailable catalogs without disclosing response bodies", async () => {
     const store = remoteRoundStore({ FUNDING_API_URL: "https://example.com/funding", FUNDING_API_TOKEN: "secret" }, vi.fn().mockResolvedValue(new Response("private backend error", { status: 500 })));
