@@ -23,8 +23,8 @@ over x402. Both pay in tUSDM, and both land in the splitter.
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Repository                                | https://github.com/sambitsargam/agentfund                                                                                   |
 | Live dashboard                            | https://agentfund-six.vercel.app                                                                                            |
-| Deck (.pptx, Google Drive)                | _(filled in at deploy)_                                                                                                     |
-| Demo video (≤3 min, embedded in the deck) | _(filled in at deploy)_                                                                                                     |
+| Deck (.pptx, Google Drive)                | https://drive.google.com/drive/folders/10I_fU-6ZZ8UZFQ-d8EQfU_pcDVEqP-4g                                                    |
+| Demo video (≤3 min)                       | https://youtu.be/4oNk0URESa8 · CRE run: https://youtu.be/4uxOqLs-ZjI                                                        |
 | Write-up                                  | [docs/WRITEUP.md](WRITEUP.md)                                                                                               |
 | Architecture                              | [docs/ARCHITECTURE.md](ARCHITECTURE.md)                                                                                     |
 | How the verdict is produced               | [docs/METHODOLOGY.md](METHODOLOGY.md) · [docs/RESULT_QUALITY.md](RESULT_QUALITY.md)                                         |
