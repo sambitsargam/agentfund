@@ -1,0 +1,8 @@
+# Vendored Foundry dependency: not our code, and it dominates the language stats.
+contracts/evm/lib/** linguist-vendored
+
+# Generated.
+package-lock.json linguist-generated
+
+# Aiken is detected, but mark it so the on-chain code is counted as source.
+*.ak linguist-language=Aiken
