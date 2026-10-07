@@ -25,9 +25,8 @@ coverage/
 
 # Persisted keeper runtime journal (public evidence is exported separately)
 services/keeper/data/
-# A round's terms and seed are public configuration: they define its address, hold no keys,
-# and the deployed dashboard needs them to show the round at all.
-!services/keeper/data/funding/
-!services/keeper/data/funding/rounds/
-!services/keeper/data/funding/rounds/*.json
+# Published round configuration now lives in data/funding, outside this ignored tree.
+data/funding/tickets/
+data/funding/purchases/
+data/funding/quota.json
 .vercel

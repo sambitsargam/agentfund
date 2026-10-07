@@ -1,0 +1,22 @@
+# Railway's uploader does not honour git's re-inclusion rules, so a directory excluded in
+# .gitignore stays excluded even where .gitignore re-includes files inside it. Published round
+# configuration lives under services/keeper/data/funding/rounds and must reach the image, so
+# the upload rules are listed here explicitly rather than inherited.
+node_modules
+.git
+.next
+dist
+coverage
+out
+*.log
+.DS_Store
+.env
+.env.*
+.vercel
+contracts/evm/out
+contracts/evm/cache
+contracts/cardano/build
+data/funding/tickets
+data/funding/quota.json
+services/coworker/data
+docs/evidence/**/*.png

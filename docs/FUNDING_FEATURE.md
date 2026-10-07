@@ -32,7 +32,7 @@ is neither guaranteed repayment nor evidence of future demand.
   locates its blueprint by walking parent directories. For a packaged deployment, include
   `contracts/cardano/plutus.json` and set `AGENTFUND_ROOT`.
 - `FUNDING_DATA_DIR` optionally relocates the shared durable round/ticket/purchase store.
-  Locally, both Atlas and the dashboard must use the same store. Hosted services use the authenticated funding API described below. Default: `services/keeper/data/funding`.
+  Locally, both Atlas and the dashboard must use the same store. Hosted services use the authenticated funding API described below. Default: `data/funding`. Published round configuration is committed there; tickets, purchases and quota counters are not.
 - `ATLAS_PUBLIC_URL` controls the round endpoint displayed in the dashboard; `ATLAS_URL`
   controls the buyer CLI. Use the actual Atlas service origin, not the dashboard origin.
 - Open the dashboard in a browser with a Cardano wallet extension; the Codex preview does
