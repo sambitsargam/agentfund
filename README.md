@@ -104,8 +104,7 @@ Every link below is a real transaction on a public testnet.
 | 4   | Keeper splits locked payments: investor paid first                                    | [`c8377ab4…fd90`](https://preprod.cardanoscan.io/transaction/c8377ab4d1008451c4a90da334708f256c1f33fef78820ce56e1c41db653fd90)  |
 | 5   | Chainlink rating written from real on-chain earnings                                  | [`0x3ffd2c9e…b9b7`](https://sepolia.basescan.org/tx/0x3ffd2c9e96cb116361aeaf0ca0f60e27654e0c060a79794f2a9b7b9a391db9b7)         |
 | 6   | **Tampered payment blocked**: `payTo` changed, gate returns Deny, buyer pays nothing  | [`0x6ac84ada…8925`](https://sepolia.basescan.org/tx/0x6ac84adaafbc31f5cdec5073904970236574c41be8eef539dd28ce9c19868925)         |
-
-| 7   | **A funding round completes itself**: share activates on funding, payouts stop at the cap | [`f30de9c1…1527`](https://preprod.cardanoscan.io/transaction/f30de9c191f82dbbf68215d775689a3f6b6d3d21ed844453975855a3f6ef1527) |
+| 7   | **A funding round completes itself**: the share activates on funding and payouts stop at the cap | [`f30de9c1…1527`](https://preprod.cardanoscan.io/transaction/f30de9c191f82dbbf68215d775689a3f6b6d3d21ed844453975855a3f6ef1527) |
 
 The paid Sokosumi Task, its confirmed collection, sweep, and investor payout are recorded in `docs/VERIFICATION.md` and `docs/samples/settlement-verification.json`.
 
