@@ -53,3 +53,15 @@ Re-pointed at the hosted URL, the cron run reads the agent over the public inter
 | Run | Agreed observation                                                               | Score                        | Result                                                                                                                                                                              |
 | --- | -------------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 8   | earnings 10,000,000 (10 tUSDM), 22 transactions, probe passed over HTTPS, 363 ms | 1000 = 400 + 300 + 200 + 100 | Written: [`0x6899b22e5276f91e833458c5c4730c61ad9350120c3206b00ea6efc6bbb9bb56`](https://sepolia.basescan.org/tx/0x6899b22e5276f91e833458c5c4730c61ad9350120c3206b00ea6efc6bbb9bb56) |
+
+### Against the hosted agent
+
+The buyer agent and the gate both resolved Atlas at `localhost`, so after Atlas moved to a host
+every run failed at the 402. Re-pointed at the public URL, the two decisions run end to end:
+
+| Run | Proposal                       | Decision                                                                            | Tx                                                                                                                                                                                                                                                               |
+| --- | ------------------------------ | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9   | genuine, rating 1000           | **ALLOW**, flags 0; buyer paid on Cardano in 42.8 s, report returned `low (15/100)` | [`0x29173792…8fa9`](https://sepolia.basescan.org/tx/0x291737928aa9bcff8ab7fbcbed9b1358a377e5b18c889f04c842200aac0d8fa9) · payment [`11da6705…ec7b`](https://preprod.cardanoscan.io/transaction/11da670512d8c70f644d174565c55f89c16c7679878671c1769d8fe4ed67ec7b) |
+| 10  | same offer, `payTo` redirected | **DENY**, flags 1 (`payToMismatch`); buyer did not pay                              | [`0x312d8125…7fed`](https://sepolia.basescan.org/tx/0x312d8125a26c1de9c3a4497915f3d97c72453eb5f78fb0e9dea6174ff80a7fed)                                                                                                                                          |
+
+Both are reproducible in one take with `scripts/demo-cre.sh`.

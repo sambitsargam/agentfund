@@ -1,6 +1,6 @@
 {
   "authorizedKeys": [],
-  "atlasUrl": "http://localhost:4021",
+  "atlasUrl": "https://atlas-production-c76c.up.railway.app",
   "blockfrostBaseUrl": "https://cardano-preprod.blockfrost.io/api/v0",
   "registryAddress": "0xee171354e30f24428eEaAaDA952eEC7479b08131",
   "chainSelectorName": "ethereum-testnet-sepolia-base-1",
