@@ -12,17 +12,17 @@ const MINUTE = 60_000;
  * `unlock` is what gates collection, so it stays as early as the other deadlines allow.
  */
 /**
- * Measured on preprod: the buyer locks funds around eight minutes in, Atlas produces the
- * report in about one, and the payment service then takes up to ten more minutes to get the
- * result hash confirmed and noticed, because it batches and its chain sync advances in bursts.
- * A 25-minute result deadline left only 6.5 minutes of slack; one slow batch loses the Task
- * and refunds the buyer. These values trade a slower collection for that margin.
+ * Measured on preprod. The buyer's side locks funds three to eight minutes in, Atlas produces
+ * the report in about one, and the payment service then confirms and notices the result hash.
+ * That last step took ten minutes while it required twenty block confirmations; at three it is
+ * under two. These deadlines keep roughly fifteen minutes of slack over the observed worst
+ * case, which is what a slow batch needs, without making every buyer wait an hour to collect.
  */
 export const DEADLINES = {
   payBy: Number(process.env.MASUMI_PAY_BY_MINUTES ?? 15),
-  submitResult: Number(process.env.MASUMI_RESULT_MINUTES ?? 40),
-  unlock: Number(process.env.MASUMI_UNLOCK_MINUTES ?? 55),
-  dispute: Number(process.env.MASUMI_DISPUTE_MINUTES ?? 75),
+  submitResult: Number(process.env.MASUMI_RESULT_MINUTES ?? 30),
+  unlock: Number(process.env.MASUMI_UNLOCK_MINUTES ?? 45),
+  dispute: Number(process.env.MASUMI_DISPUTE_MINUTES ?? 65),
 };
 
 /** Masumi's own minimum: unlock must be at least 15 minutes after the result deadline. */
@@ -221,7 +221,23 @@ export class CoworkerWorker {
       try {
         if (observeOnly) {
           const s = this.deps.store.read(task.id);
-          if (s && (s.marketplaceStatus !== task.status || (s.stage === "failed" && s.error?.startsWith("local state is missing for a paid RUNNING Task")))) this.save({ ...s, marketplaceStatus: task.status, ...(s.error?.startsWith("local state is missing for a paid RUNNING Task") ? { stage: "needs-recovery" as const } : {}) });
+          if (
+            s &&
+            (s.marketplaceStatus !== task.status ||
+              (s.stage === "failed" &&
+                s.error?.startsWith(
+                  "local state is missing for a paid RUNNING Task",
+                )))
+          )
+            this.save({
+              ...s,
+              marketplaceStatus: task.status,
+              ...(s.error?.startsWith(
+                "local state is missing for a paid RUNNING Task",
+              )
+                ? { stage: "needs-recovery" as const }
+                : {}),
+            });
           continue;
         }
         await this.advance(task);
