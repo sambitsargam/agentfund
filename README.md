@@ -2,9 +2,27 @@
 
 **Investors fund an AI agent and are repaid out of its earnings automatically, with the split enforced by a Cardano contract.**
 
-Atlas is an AI agent that checks Cardano wallets for a living. Teams hire it on the Sokosumi marketplace; other AI agents pay it per report over x402. x402 payments land directly in an Aiken contract; Masumi escrow earnings first collect into the selling wallet and are swept into that contract. The contract can only release funds by paying each investor their share. Before our buyer agent pays, a Chainlink CRE workflow verifies the payment is going to that contract, that Atlas has a fresh on-chain rating, and that two AI auditors agree — then records Allow, Deny or Review on Base Sepolia. The buyer pays only on Allow. That gate covers this route; a customer paying a funding round's own endpoint pays the round contract directly, constrained by the round validator rather than by Chainlink.
+[![AgentFund dashboard](docs/screenshots/dashboard.png)](https://agentfund-six.vercel.app)
 
-The hard problem in agent financing is not raising money, it is collecting. An agent that earns can simply not pay you back. AgentFund removes the choice: repayment is a property of the payment itself.
+> **The hard problem in agent financing is not raising money, it is collecting.**
+> An agent that earns can simply not pay you back. AgentFund removes the choice:
+> repayment is a property of the payment itself.
+
+| | |
+| --- | --- |
+| **Live dashboard** | https://agentfund-six.vercel.app |
+| **Proven on-chain** | a funding round opened, funded, repaid to its cap and closed itself — [every step a public transaction](#evidence-chain) |
+| **Enforced by** | two Plutus V3 validators in Aiken — 53 tests, 251 checks, 1.7% of the per-transaction budget |
+| **Policed by** | two Chainlink CRE workflows that decide, not just report — a tampered payment was blocked before any money moved |
+| **Networks** | Cardano preprod and Base Sepolia. Test money only. |
+
+**Atlas** is an AI agent that checks Cardano wallets for a living. Teams hire it on the Sokosumi marketplace; other AI agents pay it per report over x402.
+
+**The address it advertises is not a wallet — it is a contract.** x402 payments land directly in an Aiken validator that can only release funds by paying each investor their share first. Masumi escrow earnings take a longer route: they collect into the selling wallet and are swept into the same contract afterwards.
+
+**Before a payment happens at all, Chainlink CRE decides.** A confidential workflow checks that the money is going to that contract, that the script in the offer really is the deployed validator, that Atlas has a fresh on-chain rating, and that two AI auditors agree — then records Allow, Deny or Review on Base Sepolia. The buyer pays only on Allow.
+
+That gate covers the buyer-agent route. A customer paying a funding round's own endpoint pays the round contract directly, constrained by the round validator rather than by Chainlink.
 
 ## Architecture
 
@@ -87,7 +105,8 @@ Every link below is a real transaction on a public testnet.
 | 5   | Chainlink rating written from real on-chain earnings                                  | [`0x3ffd2c9e…b9b7`](https://sepolia.basescan.org/tx/0x3ffd2c9e96cb116361aeaf0ca0f60e27654e0c060a79794f2a9b7b9a391db9b7)         |
 | 6   | **Tampered payment blocked**: `payTo` changed, gate returns Deny, buyer pays nothing  | [`0x6ac84ada…8925`](https://sepolia.basescan.org/tx/0x6ac84adaafbc31f5cdec5073904970236574c41be8eef539dd28ce9c19868925)         |
 
-| 7 | **A funding round completes itself**: share activates on funding, payouts stop at the cap | [`f30de9c1…1527`](https://preprod.cardanoscan.io/transaction/f30de9c191f82dbbf68215d775689a3f6b6d3d21ed844453975855a3f6ef1527) |
+| 7   | **A funding round completes itself**: share activates on funding, payouts stop at the cap | [`f30de9c1…1527`](https://preprod.cardanoscan.io/transaction/f30de9c191f82dbbf68215d775689a3f6b6d3d21ed844453975855a3f6ef1527) |
+
 The paid Sokosumi Task, its confirmed collection, sweep, and investor payout are recorded in `docs/VERIFICATION.md` and `docs/samples/settlement-verification.json`.
 
 `docs/CHAINLINK_EVIDENCE.md` lists every simulation run with its output; `docs/BUILD_LOG.md` is the full log with the failures and what they taught us.
@@ -142,7 +161,7 @@ docs/                    write-up, methodology, evidence, threat model, operatio
 npm ci
 cp .env.example .env            # fill in Blockfrost, mnemonics, OpenAI key
 npm test           # TypeScript tests
-(cd contracts/cardano && aiken check)      # 27 validator tests
+(cd contracts/cardano && aiken check)      # 53 validator tests, 251 checks
 (cd contracts/evm && forge test)           # 11 registry tests
 ```
 
