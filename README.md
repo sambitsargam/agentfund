@@ -122,7 +122,7 @@ The dashboard has four buttons that run the real pipeline on test networks: buy 
 ## Repository layout
 
 ```
-contracts/cardano        Aiken splitter, 27 tests including property tests
+contracts/cardano        Aiken splitter and funding round, 53 tests (251 checks)
 contracts/evm            AgentRatingRegistry (Foundry, 11 tests)
 workflows/rating         CRE workflow: cron + HTTP, rates Atlas
 workflows/payment-gate   CRE confidential workflow: approves or blocks payments

@@ -193,7 +193,7 @@ would reach a wallet instead of the splitter, and the gate refuses before any pa
 
 ## How to run it
 
-See [docs/OPERATIONS.md](OPERATIONS.md). `npm test` runs 111 tests; `aiken check` in
+See [docs/OPERATIONS.md](OPERATIONS.md). `npm test` runs 168 tests; `aiken check` in
 `contracts/cardano` runs 251 checks including property tests and on-chain budget bounds;
 `forge test` runs 11.
 

@@ -79,7 +79,7 @@ splitter(atlas, investors[(key, bps)], assets[(policy, name)])
 - Sums each asset across **all** script inputs, so a batch cannot pay for one and pocket the rest.
 - Every investor gets at least `floor(total × bps / 10000)`; Atlas gets the remainder, so rounding dust is never lost.
 - Datum-optional, which is why x402 payments, plain payments and escrow collections all work.
-- 27 tests, including property tests over randomised totals and shares.
+- 53 tests (251 checks), including property tests over randomised totals and shares.
 - Measured: 1.7% of Cardano's per-transaction budget for the full check; batches of 8 settle at ~0.03 ADA per payment.
 
 ---

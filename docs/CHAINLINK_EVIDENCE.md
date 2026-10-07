@@ -33,6 +33,10 @@ Started from Chainlink's `ai-audit-firewall-ts` template (cre-templates `d0223f3
 
 Read back with `getDecision(bytes32)`: run 1 `(atlas, 1, 0, 385, 1791259461)`, run 2 `(atlas, 2, 1, 385, 1791259469)`.
 
+### Driven by the buyer agent
+
+| Run | Proposal | Auditors | Decision on-chain | Tx |
+| --- | -------- | -------- | ----------------- | -- |
 | 3 | buyer agent, genuine, request `0xd5cefbdb…e495` | mock: allow, allow | **ALLOW**, rating 385; buyer then paid on Cardano [`3efa54df…59ba`](https://preprod.cardanoscan.io/transaction/3efa54df70e619e349db20ce5e925ebdb6c771e76131bfd485071dac871d59ba) with the request id in its datum | [`0x95bd73aa0c306b64294145e27908c9758f77deb166d38313021ea1ce2ff43a5a`](https://sepolia.basescan.org/tx/0x95bd73aa0c306b64294145e27908c9758f77deb166d38313021ea1ce2ff43a5a) |
 | 4 | buyer agent `--tamper`, request `0xfc01bda4…7302` | not called | **DENY**, flags 1; buyer did not pay | [`0xc625f8ae1158732948d79b209f64331efa8b087dba5fa86985725883f07aba39`](https://sepolia.basescan.org/tx/0xc625f8ae1158732948d79b209f64331efa8b087dba5fa86985725883f07aba39) |
 

@@ -27,7 +27,7 @@ Blockfrost confirmed all three transactions. Public input/output evidence is sav
 
 - Workspace tests: **62 passed** (cardano-tx 7, shared 14, Atlas 8, buyer 5, Coworker 19, dashboard 9).
 - Workspace TypeScript checks: passed.
-- Aiken: **27 tests passed**, including two property tests with 100 checks each; zero errors/warnings.
+- Aiken: **53 tests passed** (251 checks), including two property tests with 100 cases each; zero errors/warnings.
 - Foundry: **11 tests passed**.
 - Payment gate: **12 Bun tests passed**, workflow type check passed.
 - Rating workflow: **5 Bun tests passed**, workflow type check passed.

@@ -241,3 +241,22 @@ refuses to write its evidence file if repayments ever exceed the cap.
 - Validation: 158 workspace tests plus one HTTP quota regression (159 total), workspace types, production build and final Atlas types passed. No payment or signature requested from a user wallet. Deployment and public checks recorded below. No commits or pushes by Codex.
 
 - Live verification: Railway deployment 786b9af1-2fec-442a-a69f-c5f872f69bcc and Vercel production deployment succeeded. Six intentionally invalid preparation requests returned 400, seventh returned 429 with Retry-After: 38; no provider transaction was prepared. Public round reads still returned 200 with closed/300000 repaid, and demo runner remained enabled. Existing round/tickets stay on the persistent Coworker volume.
+
+## 7 October 2026 — Chainlink decision-history RPC failure
+
+- Reproduced the live provider failures: the registry now spans more than 50,000 blocks, so PublicNode rejects the old full-history request. The configured default dRPC fallback rejected even a 500-block request with its free-plan range error. Base's official endpoint and PublicNode both served bounded ranges.
+- Replaced the unbounded-first strategy with 10,000-block pages (500 for sepolia.base.org), four concurrent requests maximum, fixed block-number upper bounds and whole-query fallback to independent providers. Partial results never masquerade as complete history. Removed dRPC as the default backup; configured endpoints remain supported. Current rating reads now also fail over, and a missing historical transaction link does not erase a successful current rating read. Provider errors shown to users no longer expose RPC internals.
+- Used viem-integration skill and official viem transport documentation. No dependency upgrades. Read-only live verification returned 35 decisions including tx 0x0ce91db7b5f7b0fe667c15d8e073fe4a3b3234c49063d75b565aebea3196ffef and current rating 1000.
+- All 30 web tests passed (including three range/fallback regressions), web type checks and production build passed. No blockchain writes, commits or pushes. Public deployment verification follows.
+
+- Public verification after successful Vercel deployment: dashboard returned HTTP 200, the Chainlink RPC error text was absent, and the latest verified decision transaction was present in the rendered payment history. No Git push.
+
+## 2026-10-07 — Cancel or resume unsigned funding reviews
+
+Fixed the review-only reservation trap: repeating the same action for the same wallet/round restores the existing ticket instead of rejecting it; Cancel unsigned proposal now cancels the server ticket before clearing local storage. Assembly and cancellation share the durable proposal lock. Valid assembly records its state before signed bytes leave the backend, and discarded tickets reject assembly. Signed/legacy proposals remain reserved through confirmation or chain expiry. Confirmation merges the latest stored state under the lock. No transaction was paid or submitted for this change.
+
+Reference: Cardano `build-transaction` skill and bundled `docs/sources/evolution-sdk/wallets/api-wallet.mdx`; installed Evolution 0.5.16 APIs. Regression coverage includes restoration, conflicting requests, idempotent cancellation, signature failure, assembly persistence, legacy expiry and concurrent signing/cancellation. This cancellation is an application-level review operation, not revocation of an already signed on-chain transaction. No Git push.
+
+Validation so far: 168 workspace tests, all workspace typechecks, production web build and diff whitespace checks passed. Localhost restarted with the new build; local funding reads return HTTP 200 and cancellation safely rejects a nonexistent ticket. Coworker and Vercel updated. The public proxy still returned the older handler, so Atlas (which also exposes the shared funding API) is being updated before final hosted verification. No transaction signing/submission or Git push.
+
+Final hosted verification: Atlas deployment 3b694026-dc63-4eb9-b72c-45efe91e842a succeeded. Public Vercel cancellation now recognizes the new action and safely rejects the nonexistent verification ticket; funding GET returns HTTP 200 with both rounds. Local and hosted fix complete. No payment, signature, commit or push.

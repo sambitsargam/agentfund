@@ -10,7 +10,9 @@ So revenue-share financing for agents barely exists, which is a shame, because a
 
 ## The approach
 
-AgentFund makes repayment a property of the payment rather than a promise about it. **x402 payments bypass the agent wallet. Masumi escrow earnings require a selling-wallet sweep.** Its advertised payment address is a contract that can only release money by paying each investor their share.
+AgentFund makes repayment a property of the payment rather than a promise about it. The address Atlas advertises for payment is not a wallet but a contract that can only release money by paying each investor their share first.
+
+The two income routes differ in how tightly that holds. **x402 payments bypass the agent's wallet entirely** — the customer pays the contract directly, so there is no moment at which the operator could decline to forward the money. **Masumi escrow earnings do not**: Masumi requires a key return address, so escrow is collected into the operator's selling wallet and swept into the contract afterwards. Repayment is enforced after that sweep, and we say so rather than claiming the stronger guarantee for both.
 
 ### The splitter
 
@@ -39,7 +41,7 @@ An investor contract is only as good as the agent's willingness to advertise it.
 
 ## Cardano infrastructure used
 
-- **Aiken** (v1.1.24, stdlib v3.1.0) for the validator; 27 tests, including property tests that assert an exact split always passes and that short-paying an investor by one unit always fails, across randomised totals and share sizes.
+- **Aiken** (v1.1.24, stdlib v3.1.0) for the validator; 53 tests — two of them property tests run over 100 randomised cases each, asserting that an exact split always passes and that short-paying an investor by a single unit always fails. `aiken check` reports 251 checks, 0 errors.
 - **Plutus V3** with a datum-optional spend, which is what lets the same contract accept x402 script payments, plain payments and escrow collections.
 - **EUTXO batching**: the validator reads all script inputs, so one transaction settles many payments. Only the first locked input runs the full check; the rest return early, which took a 10-input batch from 129% of the per-transaction memory limit to 82% in tests, and to a measured 1.7% on-chain.
 - **Native tokens**: both preprod tUSDM policies (`e675b46e…` for x402, `16a55b2a…` for Masumi) are governed, so earnings from either route split correctly.
@@ -53,7 +55,7 @@ Yes, end to end on preprod, and the dashboard shows it live. A customer agent as
 
 ## How it scales
 
-**Cost per payment.** Settlement is one script execution over a batch. Measured on preprod: 0.27 tADA to settle two payments, with the full check costing 1.7% of the per-transaction memory budget and each additional input about 0.2%. A batch of eight is safely inside the limit, so the marginal on-chain cost of a payment is roughly 0.03 tADA. The keeper supports manual batches; scheduling remains part of hosting. Batching, so settlement cost is amortised rather than per-payment.
+**Cost per payment.** Settlement is one script execution over a batch. Measured on preprod: 0.27 tADA to settle two payments, with the full check costing 1.7% of the per-transaction memory budget and each additional input about 0.2%. A batch of eight is safely inside the limit, so the marginal on-chain cost of a payment is roughly 0.03 tADA. The keeper supports manual batches; automatic scheduling remains part of hosting, so today a batch is triggered rather than timed.
 
 **Throughput.** Atlas's own work is the bottleneck, not the chain: a report takes about 3 seconds and a variable number of public-data requests, including agent identity and counterparty checks. Payment confirmation is 20–60 seconds, which is why the buyer agent fans its wallet out into separate coins — one wallet cannot sign two payments against the same UTxO within a block.
 
