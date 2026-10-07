@@ -12,6 +12,15 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 SUBJECT="${DEMO_SUBJECT:-addr_test1wzs4e6wc95hkwezlccjw9mdvq0r0rsgx6zk34avptga3ftgn37w4g}"
 
+# A login shell is not guaranteed here, and a tool missing halfway through is worse on camera
+# than a refusal before the first frame.
+export PATH="$HOME/.bun/bin:$HOME/.cre/bin:$PATH"
+for tool in cre npm; do
+  command -v "$tool" >/dev/null || { echo "$tool is not on PATH; this recording needs it." >&2; exit 1; }
+done
+curl -sf -o /dev/null --max-time 10 "${ATLAS_URL:-https://atlas-production-c76c.up.railway.app}/health" \
+  || { echo "Atlas is not answering; start it before recording." >&2; exit 1; }
+
 # Same filter the dashboard uses, so the recording matches what judges see there.
 quiet() {
   grep -vE '^\s*at |node:internal|npm (warn|notice)|^>|[│╭╰─┃┌└├]|Update available|cre update|releases to upgrade|Initializing\.\.\.|Loading settings|Checking RPC|Compiling workflow|Simulation limits|Binary hash|Config hash|SIMULATION\]' \
