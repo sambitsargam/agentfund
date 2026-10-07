@@ -7,5 +7,6 @@ export interface FundingView {
 export interface FundingTicket {
   id: string; roundId: string; action: FundingAction; address: string;
   terms: { capital: string; bps: number; cap: string; operator: string };
+  proposalState?: "unsigned" | "assembled" | "discarded";
   cbor: string; txHash: string; expiresAt: number; fee: string;
 }

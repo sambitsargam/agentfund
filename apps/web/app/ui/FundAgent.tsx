@@ -128,7 +128,13 @@ export function FundAgent() {
       cap: atomic(cap),
     });
     persist(t);
-    setMessage("Review the proposal below. No transaction has been submitted.");
+    setMessage(t.proposalState === "unsigned" ? "Review the proposal below. No payment has been made through this proposal." : "Existing proposal restored. Check confirmation before retrying the same transaction.");
+  }
+  async function discardProposal() {
+    if (!pending || pending.signedCbor) throw new Error("A signed payment must be confirmed or expire before replacing it");
+    await api({ action: "discard", id: pending.id });
+    persist(null);
+    setMessage("Unsigned proposal cancelled. No payment was made; you can review funding again.");
   }
   async function signAndSubmit() {
     if (!wallet || !pending)
@@ -286,9 +292,9 @@ export function FundAgent() {
               <button
                 className="btn"
                 disabled={busy}
-                onClick={() => persist(null)}
+                onClick={() => void run(discardProposal)}
               >
-                Discard unsigned proposal
+                Cancel unsigned proposal
               </button>
             )}
           </div>

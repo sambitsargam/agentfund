@@ -27,7 +27,8 @@ export async function fundingViews(): Promise<FundingView[]> {
 }
 async function prepareFundingUnlocked(input: { action: FundingAction; address: string; roundId?: string; capital?: string; bps?: number; cap?: string }): Promise<FundingTicket> {
   const address = walletAddress(input.address), client = provider(address), db = store();
-  checkProposalReservation(db.dir, address, input.roundId);
+  const existing = checkProposalReservation(db.dir, address, input.roundId, Date.now(), input);
+  if (existing) return existing;
   let c: RoundConfig;
   let built;
   if (input.action === "open") {
@@ -52,7 +53,7 @@ async function prepareFundingUnlocked(input: { action: FundingAction; address: s
     else throw new Error("Unknown funding action");
   }
   const tx = await built.toTransaction();
-  const ticket: FundingTicket = { id: randomUUID(), roundId: c.id, action: input.action, address, terms: c.terms, cbor: Transaction.toCBORHex(tx), txHash: TransactionHash.toHex(TransactionBody.toHash(tx.body)), expiresAt: Date.now() + 540_000, fee: String(await built.estimateFee()) };
+  const ticket: FundingTicket = { proposalState: "unsigned", id: randomUUID(), roundId: c.id, action: input.action, address, terms: c.terms, cbor: Transaction.toCBORHex(tx), txHash: TransactionHash.toHex(TransactionBody.toHash(tx.body)), expiresAt: Date.now() + 540_000, fee: String(await built.estimateFee()) };
   db.write("tickets", ticket.id, ticket);
   if (input.action === "open") db.write("rounds", c.id, c);
   return ticket;
@@ -60,12 +61,30 @@ async function prepareFundingUnlocked(input: { action: FundingAction; address: s
 export async function prepareFunding(input: Parameters<typeof prepareFundingUnlocked>[0]): Promise<FundingTicket> {
   return withProposalLock(store().dir, () => prepareFundingUnlocked(input));
 }
-export function assembleFunding(id: string, witnesses: string) {
-  const ticket = store().read<FundingTicket>("tickets", id);
-  if (!ticket) throw new Error("Transaction proposal not found");
-  if (Date.now() > ticket.expiresAt) throw new Error("The unsigned proposal expired. Build a fresh proposal before signing.");
-  verifyFundingWitnesses(ticket, witnesses);
-  return { signedCbor: Transaction.addVKeyWitnessesHex(ticket.cbor, witnesses), txHash: ticket.txHash };
+export async function assembleFunding(id: string, witnesses: string) {
+  const db = store();
+  return withProposalLock(db.dir, async () => {
+    const ticket = db.read<FundingTicket>("tickets", id);
+    if (!ticket) throw new Error("Transaction proposal not found");
+    if (ticket.proposalState === "discarded") throw new Error("Transaction proposal was discarded. Prepare a new one before signing.");
+    if (Date.now() > ticket.expiresAt) throw new Error("The unsigned proposal expired. Build a fresh proposal before signing.");
+    verifyFundingWitnesses(ticket, witnesses);
+    const signedCbor = Transaction.addVKeyWitnessesHex(ticket.cbor, witnesses);
+    // Persist before returning signed bytes: losing the response must not make cancellation safe.
+    db.write("tickets", id, { ...ticket, proposalState: "assembled" });
+    return { signedCbor, txHash: ticket.txHash };
+  });
+}
+export async function discardFunding(id: string) {
+  const db = store();
+  return withProposalLock(db.dir, async () => {
+    const ticket = db.read<FundingTicket>("tickets", id);
+    if (!ticket) throw new Error("Transaction proposal not found");
+    if (ticket.proposalState === "discarded") return { discarded: true };
+    if (ticket.proposalState !== "unsigned" && Date.now() < ticket.expiresAt + 120000) throw new Error("Transaction proposal may already be signed. Check confirmation or wait for chain expiry; it cannot be safely cancelled yet.");
+    db.write("tickets", id, { ...ticket, proposalState: "discarded" });
+    return { discarded: true };
+  });
 }
 export async function fundingConfirmation(id: string) {
   const ticket = store().read<FundingTicket>("tickets", id);
@@ -74,7 +93,10 @@ export async function fundingConfirmation(id: string) {
   if (r.status === 404) return { confirmed: false, txHash: ticket.txHash, message: "Not confirmed yet. Keep this transaction; do not create a replacement payment." };
   if (!r.ok) throw new Error("Confirmation provider unavailable; transaction status remains unknown");
   const confirmed = Number((await r.json()).block_height) > 0;
-  if (confirmed) store().write("tickets", ticket.id, { ...ticket, confirmedAt: Date.now() });
+  if (confirmed) await withProposalLock(store().dir, async () => {
+    const db = store(), current = db.read<FundingTicket>("tickets", ticket.id);
+    if (current) db.write("tickets", ticket.id, { ...current, confirmedAt: Date.now() });
+  });
   return { confirmed, txHash: ticket.txHash };
 }
 
@@ -83,6 +105,7 @@ export async function fundingAction(body: Record<string, any>) {
   const group = ["open", "fund", "distribute", "cancel"].includes(body.action) ? "build" : body.action === "confirm" ? "confirm" : "other";
   fundingQuota(store().dir, group);
   if (body.action === "connect") return { address: walletAddress(body.address) };
+  if (body.action === "discard") return discardFunding(body.id);
   if (body.action === "assemble") return assembleFunding(body.id, body.witnesses);
   if (body.action === "confirm") return fundingConfirmation(body.id);
   if (!["open", "fund", "distribute", "cancel"].includes(body.action)) throw new Error("Unknown funding action");

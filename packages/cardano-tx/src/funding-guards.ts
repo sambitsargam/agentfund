@@ -28,14 +28,16 @@ export async function withProposalLock<T>(dir: string, action: () => Promise<T>)
   try { return await action(); } finally { rmdirSync(lock); }
 }
 /** Reserve this wallet and round through chain expiry, not merely through the shorter signing deadline. */
-export function checkProposalReservation(dir: string, address: string, roundId?: string, now = Date.now()) {
+export function checkProposalReservation(dir: string, address: string, roundId?: string, now = Date.now(), reuse?: { action: FundingTicket["action"]; capital?: string; bps?: number; cap?: string }): FundingTicket | undefined {
   const path = join(dir, "tickets"); if (!existsSync(path)) return;
   for (const file of readdirSync(path).filter(f => f.endsWith(".json"))) {
     const t = JSON.parse(readFileSync(join(path, file), "utf8")) as FundingTicket & { confirmedAt?: number };
     // Builders use a 10-minute chain TTL. Reserve for 11 minutes after preparation,
     // including legacy tickets: 9-minute signing expiry + 2-minute safety margin.
     const until = t.expiresAt + 120000;
-    if (!t.confirmedAt && until > now && (t.address === address || (roundId && t.roundId === roundId))) {
+    if (t.proposalState !== "discarded" && !t.confirmedAt && until > now && (t.address === address || (roundId && t.roundId === roundId))) {
+      const sameTerms = reuse?.action !== "open" || (t.terms.capital === reuse.capital && t.terms.bps === reuse.bps && t.terms.cap === reuse.cap);
+      if (reuse && t.address === address && t.action === reuse.action && (reuse.action === "open" || t.roundId === roundId) && sameTerms && t.expiresAt > now) return t;
       throw new FundingLimited("An existing proposal reserves this wallet or round. Finish it, check confirmation, or wait for its chain expiry before preparing another.", Math.ceil((until - now) / 1000));
     }
   }

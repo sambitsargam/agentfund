@@ -30,3 +30,10 @@ data/funding/tickets/
 data/funding/purchases/
 data/funding/quota.json
 .vercel
+
+# Raw screen recordings: large, and the published cuts are produced from them.
+.recordings/
+
+# Published media: distributed as Drive/video links, too large for the repo.
+docs/video/
+docs/deck/
